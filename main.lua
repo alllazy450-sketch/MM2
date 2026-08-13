@@ -1,7 +1,7 @@
 -- ============================================
--- W424HUB – TARGET PANEL (FIXED)
+-- W424HUB – SHERIFF & MURDERER TABS
 -- ============================================
-print("=== LOADING W424HUB TARGET PANEL ===")
+print("=== LOADING W424HUB SIMPLE ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -19,7 +19,7 @@ local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 
 -- ============================================
--- WINDOW KAIRO (TANPA ICON DI TAB)
+-- WINDOW KAIRO
 -- ============================================
 local Window = Kairo:CreateWindow({
     Title = "W424HUB",
@@ -39,150 +39,10 @@ if not Window then return end
 Window:Notify({
     Title = "W424HUB",
     Description = "Loaded successfully!",
-    Content = "Target Panel + ESP + Aimbot",
+    Content = "Sheriff & Murderer Tabs",
     Color = Color3.fromRGB(0, 200, 50),
     Delay = 3
 })
-
--- ============================================
--- TARGET PANEL (POJOK KANAN ATAS)
--- ============================================
-local targetPanel = Instance.new("ScreenGui")
-targetPanel.Name = "TargetPanel"
-targetPanel.Parent = CoreGui
-targetPanel.ResetOnSpawn = false
-targetPanel.IgnoreGuiInset = true
-
-local panelFrame = Instance.new("Frame")
-panelFrame.Size = UDim2.new(0, 130, 0, 110)
-panelFrame.Position = UDim2.new(1, -145, 0, 10)
-panelFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-panelFrame.BackgroundTransparency = 0.15
-panelFrame.BorderSizePixel = 0
-panelFrame.Visible = true
-panelFrame.Parent = targetPanel
-local panelCorner = Instance.new("UICorner", panelFrame)
-panelCorner.CornerRadius = UDim.new(0, 8)
-local panelStroke = Instance.new("UIStroke", panelFrame)
-panelStroke.Color = Color3.fromRGB(60, 60, 80)
-panelStroke.Thickness = 1
-
-local panelTitle = Instance.new("TextLabel")
-panelTitle.Size = UDim2.new(1, 0, 0, 22)
-panelTitle.Position = UDim2.new(0, 0, 0, 2)
-panelTitle.BackgroundTransparency = 1
-panelTitle.Text = "🎯 TARGET"
-panelTitle.TextColor3 = Color3.fromRGB(200, 200, 255)
-panelTitle.TextSize = 13
-panelTitle.Font = Enum.Font.GothamBold
-panelTitle.Parent = panelFrame
-
-getgenv().TargetList = {
-    Murderer = false,
-    Sheriff = false,
-    Innocent = false
-}
-
-local function updateTargetDisplay()
-    local status = ""
-    if getgenv().TargetList.Murderer then status = status .. "M " end
-    if getgenv().TargetList.Sheriff then status = status .. "S " end
-    if getgenv().TargetList.Innocent then status = status .. "I " end
-    if status == "" then status = "None" end
-    panelStatus.Text = status
-end
-
--- Tombol M (Murderer)
-local btnM = Instance.new("TextButton")
-btnM.Size = UDim2.new(0.3, -4, 0, 22)
-btnM.Position = UDim2.new(0.02, 0, 0.3, 0)
-btnM.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
-btnM.BackgroundTransparency = 0.3
-btnM.BorderSizePixel = 0
-btnM.Text = "M"
-btnM.TextColor3 = Color3.fromRGB(255, 100, 100)
-btnM.TextSize = 14
-btnM.Font = Enum.Font.GothamBold
-btnM.Parent = panelFrame
-local btnMCorner = Instance.new("UICorner", btnM)
-btnMCorner.CornerRadius = UDim.new(0, 4)
-btnM.MouseButton1Click:Connect(function()
-    getgenv().TargetList.Murderer = not getgenv().TargetList.Murderer
-    if getgenv().TargetList.Murderer then
-        btnM.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
-        btnM.BackgroundTransparency = 0.2
-    else
-        btnM.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
-        btnM.BackgroundTransparency = 0.3
-    end
-    updateTargetDisplay()
-end)
-
--- Tombol S (Sheriff)
-local btnS = Instance.new("TextButton")
-btnS.Size = UDim2.new(0.3, -4, 0, 22)
-btnS.Position = UDim2.new(0.35, 0, 0.3, 0)
-btnS.BackgroundColor3 = Color3.fromRGB(10, 10, 40)
-btnS.BackgroundTransparency = 0.3
-btnS.BorderSizePixel = 0
-btnS.Text = "S"
-btnS.TextColor3 = Color3.fromRGB(100, 100, 255)
-btnS.TextSize = 14
-btnS.Font = Enum.Font.GothamBold
-btnS.Parent = panelFrame
-local btnSCorner = Instance.new("UICorner", btnS)
-btnSCorner.CornerRadius = UDim.new(0, 4)
-btnS.MouseButton1Click:Connect(function()
-    getgenv().TargetList.Sheriff = not getgenv().TargetList.Sheriff
-    if getgenv().TargetList.Sheriff then
-        btnS.BackgroundColor3 = Color3.fromRGB(30, 30, 180)
-        btnS.BackgroundTransparency = 0.2
-    else
-        btnS.BackgroundColor3 = Color3.fromRGB(10, 10, 40)
-        btnS.BackgroundTransparency = 0.3
-    end
-    updateTargetDisplay()
-end)
-
--- Tombol I (Innocent)
-local btnI = Instance.new("TextButton")
-btnI.Size = UDim2.new(0.3, -4, 0, 22)
-btnI.Position = UDim2.new(0.68, 0, 0.3, 0)
-btnI.BackgroundColor3 = Color3.fromRGB(10, 40, 10)
-btnI.BackgroundTransparency = 0.3
-btnI.BorderSizePixel = 0
-btnI.Text = "I"
-btnI.TextColor3 = Color3.fromRGB(100, 255, 100)
-btnI.TextSize = 14
-btnI.Font = Enum.Font.GothamBold
-btnI.Parent = panelFrame
-local btnICorner = Instance.new("UICorner", btnI)
-btnICorner.CornerRadius = UDim.new(0, 4)
-btnI.MouseButton1Click:Connect(function()
-    getgenv().TargetList.Innocent = not getgenv().TargetList.Innocent
-    if getgenv().TargetList.Innocent then
-        btnI.BackgroundColor3 = Color3.fromRGB(30, 180, 30)
-        btnI.BackgroundTransparency = 0.2
-    else
-        btnI.BackgroundColor3 = Color3.fromRGB(10, 40, 10)
-        btnI.BackgroundTransparency = 0.3
-    end
-    updateTargetDisplay()
-end)
-
--- Status target
-local panelStatus = Instance.new("TextLabel")
-panelStatus.Size = UDim2.new(1, -10, 0, 20)
-panelStatus.Position = UDim2.new(0, 5, 0.7, 0)
-panelStatus.BackgroundTransparency = 1
-panelStatus.Text = "None"
-panelStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
-panelStatus.TextSize = 12
-panelStatus.Font = Enum.Font.Gotham
-panelStatus.TextXAlignment = Enum.TextXAlignment.Center
-panelStatus.Parent = panelFrame
-
-updateTargetDisplay()
 
 -- ============================================
 -- FUNGSI GET ROLE
@@ -200,83 +60,126 @@ local function getRole(player)
     end
 end
 
-local function isTargetAllowed(player)
-    local role = getRole(player)
-    if role == "Murderer" and getgenv().TargetList.Murderer then return true end
-    if role == "Sheriff" and getgenv().TargetList.Sheriff then return true end
-    if role == "Innocent" and getgenv().TargetList.Innocent then return true end
-    return false
+local function isMurderer(player)
+    if not player then return false end
+    local char = player.Character
+    if not char then return false end
+    return char:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife")
+end
+
+local function isSheriff(player)
+    if not player then return false end
+    local char = player.Character
+    if not char then return false end
+    return char:FindFirstChild("Gun") or player.Backpack:FindFirstChild("Gun")
+end
+
+local function CharacterRayOrigin(char)
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    return (hrp.CFrame * CFrame.new(0, 0, hrp.Size.Z / 2)).Position
+end
+
+local function hasClearLOS(fromPos, toPos, myChar, targetChar)
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {myChar, targetChar}
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    local result = Workspace:Raycast(fromPos, (toPos - fromPos), params)
+    if result then
+        if not result.Instance:IsDescendantOf(targetChar) then
+            return false
+        end
+    end
+    return true
 end
 
 -- ============================================
--- TAB: MAIN (HANYA TOGGLE SEDERHANA)
+-- TAB SHERIFF (AIMBOT)
 -- ============================================
-local TabMain = Window:CreateTab("Main")
+local TabSheriff = Window:CreateTab("Sheriff")
 
--- ESP TOGGLE
+Window:AddParagraph(TabSheriff, "Sheriff Aimbot", "Aktif jika memegang Gun")
+
+-- Variabel Sheriff
+local sheriffAimbot = false
+local sheriffTrigger = "On Shoot"
+local sheriffTargetMode = "Murderer Only"  -- Murderer Only / All Players / Innocent Only
+local sheriffFOV = 150
+local sheriffDistance = 300
+local sheriffSmooth = 0.5
+local sheriffWall = true
+local sheriffPrediction = false
+local sheriffPredFactor = 0.2
+local sheriffAutoShoot = false
+local sheriffAutoDelay = 0.1
+local sheriffTargetPart = "HumanoidRootPart"
+
+-- UI Sheriff
+Window:AddToggle(TabSheriff, "Enable Aimbot", "Aim ke target", false, function(v) sheriffAimbot = v end, "SheriffAimbot")
+Window:AddDropdown(TabSheriff, "Trigger", "Kapan aim", {"On Shoot","Always"}, false, "On Shoot", function(v) sheriffTrigger = v end, "SheriffTrigger")
+Window:AddDropdown(TabSheriff, "Target", "Siapa yang di-aim", {"Murderer Only","All Players","Innocent Only"}, false, "Murderer Only", function(v) sheriffTargetMode = v end, "SheriffTarget")
+Window:AddSlider(TabSheriff, "FOV Radius", "30-400", 30, 400, 150, function(v) sheriffFOV = v end, "SheriffFOV", true)
+Window:AddSlider(TabSheriff, "Max Distance", "50-500", 50, 500, 300, function(v) sheriffDistance = v end, "SheriffDist", true)
+Window:AddSlider(TabSheriff, "Smoothness", "1-10", 1, 10, 5, function(v) sheriffSmooth = v / 10 end, "SheriffSmooth", true)
+Window:AddToggle(TabSheriff, "Wall Check", "Tidak menembus tembok", true, function(v) sheriffWall = v end, "SheriffWall")
+Window:AddToggle(TabSheriff, "Prediction", "Aim ke depan target", false, function(v) sheriffPrediction = v end, "SheriffPred")
+Window:AddSlider(TabSheriff, "Pred Factor", "0-100", 0, 100, 20, function(v) sheriffPredFactor = v / 100 end, "SheriffPredFactor", true)
+Window:AddToggle(TabSheriff, "Auto Shoot", "Tembak otomatis", false, function(v) sheriffAutoShoot = v end, "SheriffAutoShoot")
+Window:AddSlider(TabSheriff, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) sheriffAutoDelay = v / 100 end, "SheriffAutoDelay", true)
+Window:AddDropdown(TabSheriff, "Target Part", "Bagian tubuh", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) sheriffTargetPart = v end, "SheriffPart")
+
+-- ============================================
+-- TAB MURDERER (AUTO THROW + AUTO MELEE)
+-- ============================================
+local TabMurderer = Window:CreateTab("Murderer")
+
+Window:AddParagraph(TabMurderer, "Murderer Tools", "Aktif jika memegang Knife")
+
+-- Variabel Murderer
+local murdererThrow = false
+local murdererThrowTarget = "All Players"  -- Sheriff Only / All Players / Innocent Only
+local murdererThrowDist = 300
+local murdererThrowCD = 2
+local murdererThrowPred = false
+local murdererThrowPredFactor = 0.2
+local murdererThrowWall = true
+local murdererAutoEquip = false
+local murdererMelee = false
+local murdererMeleeRadius = 10
+local lastThrowTime = 0
+
+-- UI Murderer
+Window:AddToggle(TabMurderer, "Auto Throw Knife", "Lempar pisau otomatis", false, function(v) murdererThrow = v end, "MurdererThrow")
+Window:AddDropdown(TabMurderer, "Throw Target", "Target lemparan", {"All Players","Sheriff Only","Innocent Only"}, false, "All Players", function(v) murdererThrowTarget = v end, "MurdererThrowTarget")
+Window:AddSlider(TabMurderer, "Max Throw Distance", "50-500", 50, 500, 300, function(v) murdererThrowDist = v end, "MurdererThrowDist", true)
+Window:AddSlider(TabMurderer, "Throw Cooldown", "0.5-10s", 0.5, 10, 2, function(v) murdererThrowCD = v end, "MurdererThrowCD", true)
+Window:AddToggle(TabMurderer, "Throw Prediction", "Lempar ke depan target", false, function(v) murdererThrowPred = v end, "MurdererThrowPred")
+Window:AddSlider(TabMurderer, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) murdererThrowPredFactor = v / 100 end, "MurdererThrowPredFactor", true)
+Window:AddToggle(TabMurderer, "Throw Wall Check", "Tidak lempar tembus tembok", true, function(v) murdererThrowWall = v end, "MurdererThrowWall")
+Window:AddToggle(TabMurderer, "Auto Equip Knife", "Equip pisau otomatis", false, function(v) murdererAutoEquip = v end, "MurdererAutoEquip")
+
+Window:AddDivider(TabMurderer, "Auto Melee Attack")
+Window:AddToggle(TabMurderer, "Auto Melee", "Serang musuh di dekat", false, function(v) murdererMelee = v end, "MurdererMelee")
+Window:AddSlider(TabMurderer, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) murdererMeleeRadius = v end, "MurdererMeleeRadius", true)
+
+-- ============================================
+-- TAB VISUAL (ESP + FOV)
+-- ============================================
+local TabVisual = Window:CreateTab("Visual")
+
+Window:AddParagraph(TabVisual, "ESP & FOV", "Toggle visual")
+
+-- ESP
+if CoreGui:FindFirstChild("ESP_Holder") then CoreGui.ESP_Holder:Destroy() end
 local espEnabled = false
-Window:AddToggle(TabMain, "Enable ESP", "Show ESP based on target selection", false, function(v)
+local espData = {}
+
+Window:AddToggle(TabVisual, "Enable ESP", "Tampilkan nama + jarak + highlight", false, function(v)
     espEnabled = v
     refreshESP()
 end, "ESPToggle")
 
--- Aimbot TOGGLE
-local aimbotEnabled = false
-local aimTrigger = "On Shoot"
-local fovRadius = 150
-local maxDistance = 300
-local smoothness = 0.5
-local visibilityCheck = true
-local usePrediction = false
-local predictionFactor = 0.2
-local autoShootEnabled = false
-local autoShootDelay = 0.1
-local targetPartName = "HumanoidRootPart"
-
-Window:AddToggle(TabMain, "Aimbot", "Enable aimbot (auto-detects Sheriff)", false, function(v) aimbotEnabled = v end, "AimbotToggle")
-Window:AddDropdown(TabMain, "Trigger", "When to aim", {"On Shoot","Always"}, false, "On Shoot", function(v) aimTrigger = v end, "AimTriggerDrop")
-Window:AddSlider(TabMain, "FOV Radius", "30-400", 30, 400, 150, function(v)
-    fovRadius = v
-    if fovCircle then fovCircle.Size = UDim2.new(0, v * 2, 0, v * 2) end
-end, "FOVRadius", true)
-Window:AddSlider(TabMain, "Max Distance", "50-500", 50, 500, 300, function(v) maxDistance = v end, "MaxDist", true)
-Window:AddSlider(TabMain, "Smoothness", "1-10", 1, 10, 5, function(v) smoothness = v / 10 end, "Smoothness", true)
-Window:AddToggle(TabMain, "Wall Check", "Don't aim through walls", true, function(v) visibilityCheck = v end, "VisCheckToggle")
-Window:AddToggle(TabMain, "Prediction", "Aim ahead", false, function(v) usePrediction = v end, "PredictToggle")
-Window:AddSlider(TabMain, "Pred Factor", "0-100", 0, 100, 20, function(v) predictionFactor = v / 100 end, "PredictFactor", true)
-Window:AddToggle(TabMain, "Auto Shoot", "Shoot automatically", false, function(v) autoShootEnabled = v end, "AutoShootToggle")
-Window:AddSlider(TabMain, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) autoShootDelay = v / 100 end, "AutoShootDelay", true)
-Window:AddDropdown(TabMain, "Target Part", "Body part", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) targetPartName = v end, "TargetPartDrop")
-
--- Murderer Tools
-Window:AddDivider(TabMain, "Murderer Tools")
-local murdererAutoThrow = false
-local throwTargetMode = "All Players"
-local maxThrowDistance = 300
-local throwCooldown = 2
-local throwPrediction = false
-local throwPredFactor = 0.2
-local throwVisibility = true
-local autoEquipKnife = false
-local autoMeleeEnabled = false
-local meleeRadius = 10
-local lastThrowTime = 0
-
-Window:AddToggle(TabMain, "Auto Throw Knife", "Throw knife automatically", false, function(v) murdererAutoThrow = v end, "AutoThrowToggle")
-Window:AddDropdown(TabMain, "Throw Target", "Who to target", {"All Players","Sheriff Only"}, false, "All Players", function(v) throwTargetMode = v end, "ThrowTargetDrop")
-Window:AddSlider(TabMain, "Max Throw Distance", "50-500", 50, 500, 300, function(v) maxThrowDistance = v end, "ThrowDist", true)
-Window:AddSlider(TabMain, "Throw Cooldown", "0.5-10s", 0.5, 10, 2, function(v) throwCooldown = v end, "ThrowCD", true)
-Window:AddToggle(TabMain, "Throw Prediction", "Aim ahead", false, function(v) throwPrediction = v end, "ThrowPredict")
-Window:AddSlider(TabMain, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) throwPredFactor = v / 100 end, "ThrowPredFactor", true)
-Window:AddToggle(TabMain, "Throw Wall Check", "Don't throw through walls", true, function(v) throwVisibility = v end, "ThrowVis")
-Window:AddToggle(TabMain, "Auto Equip Knife", "Equip knife automatically", false, function(v) autoEquipKnife = v end, "AutoEquipKnife")
-Window:AddDivider(TabMain, "Auto Melee Attack")
-Window:AddToggle(TabMain, "Auto Melee", "Attack nearby enemies", false, function(v) autoMeleeEnabled = v end, "AutoMeleeToggle")
-Window:AddSlider(TabMain, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) meleeRadius = v end, "MeleeRadius", true)
-
--- ============================================
--- FOV CIRCLE
--- ============================================
+-- FOV Circle
 local fovGui = Instance.new("ScreenGui")
 fovGui.Name = "W424_FOV"
 fovGui.Parent = CoreGui
@@ -297,20 +200,20 @@ fovStroke.Transparency = 0.5
 local fovCorner = Instance.new("UICorner", fovCircle)
 fovCorner.CornerRadius = UDim.new(1, 0)
 
--- Toggle FOV
-Window:AddToggle(TabMain, "Show FOV Circle", "Display aim FOV", false, function(v)
+Window:AddToggle(TabVisual, "Show FOV Circle", "Tampilkan lingkaran FOV", false, function(v)
     fovCircle.Visible = v
-end, "FovCircleToggle")
+end, "FovToggle")
+
+Window:AddSlider(TabVisual, "FOV Radius", "30-400", 30, 400, 150, function(v)
+    fovCircle.Size = UDim2.new(0, v * 2, 0, v * 2)
+end, "FovRadius", true)
 
 -- ============================================
--- ESP (HIGHLIGHT + BILLBOARD)
+-- ESP IMPLEMENTATION
 -- ============================================
-if CoreGui:FindFirstChild("ESP_Holder") then CoreGui.ESP_Holder:Destroy() end
 local ESPFolder = Instance.new("Folder")
 ESPFolder.Name = "ESP_Holder"
 ESPFolder.Parent = CoreGui
-
-local espData = {}
 
 local function createESP(player)
     if player == LocalPlayer then return end
@@ -385,8 +288,8 @@ local function updateESP(player)
                   Color3.new(0, 1, 0)
     data.Highlight.FillColor = color
     data.Highlight.OutlineColor = color
-    data.Highlight.Enabled = isTargetAllowed(player)
-    data.Billboard.Enabled = isTargetAllowed(player)
+    data.Highlight.Enabled = true
+    data.Billboard.Enabled = true
 end
 
 local function refreshESP()
@@ -441,58 +344,17 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- ============================================
--- FUNGSI UTAMA AIMBOT
+-- FUNGSI TARGET FILTER UNTUK SHERIFF
 -- ============================================
-local function isMurderer(player)
-    if not player then return false end
-    local char = player.Character
-    if not char then return false end
-    return char:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife")
-end
-
-local function isSheriff(player)
-    if not player then return false end
-    local char = player.Character
-    if not char then return false end
-    return char:FindFirstChild("Gun") or player.Backpack:FindFirstChild("Gun")
-end
-
-local function equipKnife()
-    local char = LocalPlayer.Character
-    if not char then return false end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum or hum.Health <= 0 then return false end
-    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
-    if not backpack then return false end
-    for _, tool in ipairs(backpack:GetChildren()) do
-        if tool:IsA("Tool") and tool.Name == "Knife" then
-            hum:EquipTool(tool)
-            return true
-        end
-    end
+local function isSheriffTargetAllowed(player)
+    local role = getRole(player)
+    if sheriffTargetMode == "Murderer Only" and role == "Murderer" then return true end
+    if sheriffTargetMode == "Innocent Only" and role == "Innocent" then return true end
+    if sheriffTargetMode == "All Players" then return true end
     return false
 end
 
-local function CharacterRayOrigin(char)
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-    return (hrp.CFrame * CFrame.new(0, 0, hrp.Size.Z / 2)).Position
-end
-
-local function hasClearLOS(fromPos, toPos, myChar, targetChar)
-    local params = RaycastParams.new()
-    params.FilterDescendantsInstances = {myChar, targetChar}
-    params.FilterType = Enum.RaycastFilterType.Exclude
-    local result = Workspace:Raycast(fromPos, (toPos - fromPos), params)
-    if result then
-        if not result.Instance:IsDescendantOf(targetChar) then
-            return false
-        end
-    end
-    return true
-end
-
-local function getTargets()
+local function getSheriffTargets()
     local targets = {}
     local myChar = LocalPlayer.Character
     if not myChar then return targets end
@@ -507,21 +369,21 @@ local function getTargets()
         local hum = char:FindFirstChildOfClass("Humanoid")
         if not hum or hum.Health <= 0 then continue end
 
-        if not isTargetAllowed(player) then continue end
+        if not isSheriffTargetAllowed(player) then continue end
 
-        local part = char:FindFirstChild(targetPartName) or char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
+        local part = char:FindFirstChild(sheriffTargetPart) or char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
         if not part then continue end
 
         local targetPos = part.Position
-        if usePrediction then
+        if sheriffPrediction then
             local vel = part.Velocity or Vector3.new()
-            targetPos = targetPos + (vel * predictionFactor)
+            targetPos = targetPos + (vel * sheriffPredFactor)
         end
 
         local dist = (targetPos - myPos).Magnitude
-        if dist > maxDistance then continue end
+        if dist > sheriffDistance then continue end
 
-        if visibilityCheck and not hasClearLOS(myPos, targetPos, myChar, char) then
+        if sheriffWall and not hasClearLOS(myPos, targetPos, myChar, char) then
             continue
         end
 
@@ -533,80 +395,22 @@ local function getTargets()
         })
     end
 
-    table.sort(targets, function(a, b)
-        return a.Distance < b.Distance
-    end)
+    table.sort(targets, function(a, b) return a.Distance < b.Distance end)
     return targets
 end
 
-local function isShooting()
-    return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or
-           UserInputService:IsMouseButtonPressed(Enum.UserInputType.Touch)
+-- ============================================
+-- FUNGSI TARGET FILTER UNTUK MURDERER
+-- ============================================
+local function isMurdererTargetAllowed(player)
+    local role = getRole(player)
+    if murdererThrowTarget == "Sheriff Only" and role == "Sheriff" then return true end
+    if murdererThrowTarget == "Innocent Only" and role == "Innocent" then return true end
+    if murdererThrowTarget == "All Players" then return true end
+    return false
 end
 
-RunService.RenderStepped:Connect(function(dt)
-    if not aimbotEnabled then return end
-
-    local myChar = LocalPlayer.Character
-    if not myChar then return end
-    local hasGun = false
-    for _, tool in ipairs(myChar:GetChildren()) do
-        if tool:IsA("Tool") and tool:FindFirstChild("Fire") then
-            hasGun = true
-            break
-        end
-    end
-    if not hasGun then return end
-
-    local canAim = (aimTrigger == "Always") or (aimTrigger == "On Shoot" and isShooting())
-    if not canAim then return end
-
-    local targets = getTargets()
-    if #targets == 0 then return end
-
-    local target = targets[1]
-    local targetPos = target.Position
-    local currentCF = Camera.CFrame
-    local targetCF = CFrame.new(currentCF.Position, targetPos)
-
-    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
-    if onScreen then
-        local center = Camera.ViewportSize / 2
-        local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-        if dist > fovRadius then return end
-    else
-        return
-    end
-
-    if smoothness < 1 then
-        local lerpFactor = 1 - math.exp(-smoothness * dt * 5)
-        Camera.CFrame = currentCF:Lerp(targetCF, lerpFactor)
-    else
-        Camera.CFrame = targetCF
-    end
-
-    if autoShootEnabled and target then
-        local center = Camera.ViewportSize / 2
-        local pos, on = Camera:WorldToViewportPoint(target.Position)
-        if on and (Vector2.new(pos.X, pos.Y) - center).Magnitude < 15 then
-            pcall(function()
-                local origin = CharacterRayOrigin(myChar)
-                if origin and target.Part then
-                    local hitPart = target.Part
-                    local targetPos2 = hitPart.Position
-                    ReplicatedStorage.Remotes.ShootGun:FireServer(origin, targetPos2, hitPart, targetPos2)
-                    local tool = myChar:FindFirstChildOfClass("Tool")
-                    if tool and tool:FindFirstChild("Fire") then
-                        tool.Fire:Play()
-                    end
-                    task.wait(autoShootDelay)
-                end
-            end)
-        end
-    end
-end)
-
-local function getThrowTargets()
+local function getMurdererTargets()
     local targets = {}
     local char = LocalPlayer.Character
     if not char then return targets end
@@ -621,28 +425,120 @@ local function getThrowTargets()
         local hum = pChar:FindFirstChildOfClass("Humanoid")
         if not hum or hum.Health <= 0 then continue end
 
-        if not isTargetAllowed(player) then continue end
-
-        if throwTargetMode == "Sheriff Only" and not isSheriff(player) then continue end
+        if not isMurdererTargetAllowed(player) then continue end
 
         local part = pChar:FindFirstChild("HumanoidRootPart") or pChar:FindFirstChild("Head")
         if not part then continue end
 
         local targetPos = part.Position
-        if throwPrediction then
+        if murdererThrowPred then
             local vel = part.Velocity or Vector3.new()
-            targetPos = targetPos + (vel * throwPredFactor)
+            targetPos = targetPos + (vel * murdererThrowPredFactor)
         end
 
         local dist = (targetPos - myPos).Magnitude
-        if dist > maxThrowDistance then continue end
-        if throwVisibility and not hasClearLOS(myPos, targetPos, char, pChar) then continue end
+        if dist > murdererThrowDist then continue end
+
+        if murdererThrowWall and not hasClearLOS(myPos, targetPos, char, pChar) then
+            continue
+        end
 
         table.insert(targets, { Character = pChar, Position = targetPos, Distance = dist })
     end
 
     table.sort(targets, function(a, b) return a.Distance < b.Distance end)
     return targets
+end
+
+-- ============================================
+-- AIMBOT SHERIFF LOOP
+-- ============================================
+local function isShooting()
+    return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or
+           UserInputService:IsMouseButtonPressed(Enum.UserInputType.Touch)
+end
+
+RunService.RenderStepped:Connect(function(dt)
+    if not sheriffAimbot then return end
+
+    local myChar = LocalPlayer.Character
+    if not myChar then return end
+    -- Auto-detect Sheriff: hanya aim jika pegang gun
+    local hasGun = false
+    for _, tool in ipairs(myChar:GetChildren()) do
+        if tool:IsA("Tool") and tool:FindFirstChild("Fire") then
+            hasGun = true
+            break
+        end
+    end
+    if not hasGun then return end
+
+    local canAim = (sheriffTrigger == "Always") or (sheriffTrigger == "On Shoot" and isShooting())
+    if not canAim then return end
+
+    local targets = getSheriffTargets()
+    if #targets == 0 then return end
+
+    local target = targets[1]
+    local targetPos = target.Position
+    local currentCF = Camera.CFrame
+    local targetCF = CFrame.new(currentCF.Position, targetPos)
+
+    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
+    if onScreen then
+        local center = Camera.ViewportSize / 2
+        local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+        if dist > sheriffFOV then return end
+    else
+        return
+    end
+
+    if sheriffSmooth < 1 then
+        local lerpFactor = 1 - math.exp(-sheriffSmooth * dt * 5)
+        Camera.CFrame = currentCF:Lerp(targetCF, lerpFactor)
+    else
+        Camera.CFrame = targetCF
+    end
+
+    -- Auto Shoot
+    if sheriffAutoShoot and target then
+        local center = Camera.ViewportSize / 2
+        local pos, on = Camera:WorldToViewportPoint(target.Position)
+        if on and (Vector2.new(pos.X, pos.Y) - center).Magnitude < 15 then
+            pcall(function()
+                local origin = CharacterRayOrigin(myChar)
+                if origin and target.Part then
+                    local hitPart = target.Part
+                    local targetPos2 = hitPart.Position
+                    ReplicatedStorage.Remotes.ShootGun:FireServer(origin, targetPos2, hitPart, targetPos2)
+                    local tool = myChar:FindFirstChildOfClass("Tool")
+                    if tool and tool:FindFirstChild("Fire") then
+                        tool.Fire:Play()
+                    end
+                    task.wait(sheriffAutoDelay)
+                end
+            end)
+        end
+    end
+end)
+
+-- ============================================
+-- MURDERER AUTO THROW + AUTO MELEE LOOP
+-- ============================================
+local function equipKnife()
+    local char = LocalPlayer.Character
+    if not char then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum or hum.Health <= 0 then return false end
+    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+    if not backpack then return false end
+    for _, tool in ipairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") and tool.Name == "Knife" then
+            hum:EquipTool(tool)
+            return true
+        end
+    end
+    return false
 end
 
 local function throwKnifeAt(targetChar, targetPos)
@@ -694,25 +590,37 @@ task.spawn(function()
         local char = LocalPlayer.Character
         if not char then task.wait(0.5) continue end
 
-        if not isMurderer(LocalPlayer) then task.wait(0.5) continue end
-
-        if autoEquipKnife then
-            local has = false
-            for _, tool in ipairs(char:GetChildren()) do
-                if tool:IsA("Tool") and tool.Name == "Knife" then has = true break end
-            end
-            if not has then equipKnife(); task.wait(0.2) end
+        -- Cek apakah pemain adalah Murderer
+        if not isMurderer(LocalPlayer) then
+            task.wait(0.5)
+            continue
         end
 
-        if autoMeleeEnabled then
+        -- Auto Equip Knife
+        if murdererAutoEquip then
+            local hasKnife = false
+            for _, tool in ipairs(char:GetChildren()) do
+                if tool:IsA("Tool") and tool.Name == "Knife" then
+                    hasKnife = true
+                    break
+                end
+            end
+            if not hasKnife then
+                equipKnife()
+                task.wait(0.2)
+            end
+        end
+
+        -- Auto Melee (prioritas lebih tinggi)
+        if murdererMelee then
             local myRoot = char:FindFirstChild("HumanoidRootPart")
             if myRoot then
                 local myPos = myRoot.Position
                 local closest = nil
-                local closestDist = meleeRadius
+                local closestDist = murdererMeleeRadius
                 for _, player in ipairs(Players:GetPlayers()) do
                     if player == LocalPlayer then continue end
-                    if not isTargetAllowed(player) then continue end
+                    if not isMurdererTargetAllowed(player) then continue end
                     local pChar = player.Character
                     if not pChar then continue end
                     local hum = pChar:FindFirstChildOfClass("Humanoid")
@@ -732,8 +640,9 @@ task.spawn(function()
             end
         end
 
-        if murdererAutoThrow and (tick() - lastThrowTime) >= throwCooldown then
-            local targets = getThrowTargets()
+        -- Auto Throw
+        if murdererThrow and (tick() - lastThrowTime) >= murdererThrowCD then
+            local targets = getMurdererTargets()
             if #targets > 0 then
                 local target = targets[1]
                 throwKnifeAt(target.Character, target.Position)
@@ -744,4 +653,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ W424HUB Target Panel loaded! Click M, S, I buttons to select targets.")
+print("✅ W424HUB SIMPLE loaded – Sheriff & Murderer tabs ready!")
