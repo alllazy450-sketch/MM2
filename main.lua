@@ -1,5 +1,5 @@
 -- ============================================
--- W424HUB – Target Panel (KAIRO UI)
+-- W424HUB – TARGET PANEL (FIXED)
 -- ============================================
 print("=== LOADING W424HUB TARGET PANEL ===")
 
@@ -17,9 +17,10 @@ local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
-local TweenService = game:GetService("TweenService")
 
--- WINDOW
+-- ============================================
+-- WINDOW KAIRO (TANPA ICON DI TAB)
+-- ============================================
 local Window = Kairo:CreateWindow({
     Title = "W424HUB",
     Theme = "Ocean",
@@ -91,7 +92,7 @@ local function updateTargetDisplay()
     panelStatus.Text = status
 end
 
--- Tombol M (Murderer) - MERAH
+-- Tombol M (Murderer)
 local btnM = Instance.new("TextButton")
 btnM.Size = UDim2.new(0.3, -4, 0, 22)
 btnM.Position = UDim2.new(0.02, 0, 0.3, 0)
@@ -117,7 +118,7 @@ btnM.MouseButton1Click:Connect(function()
     updateTargetDisplay()
 end)
 
--- Tombol S (Sheriff) - BIRU
+-- Tombol S (Sheriff)
 local btnS = Instance.new("TextButton")
 btnS.Size = UDim2.new(0.3, -4, 0, 22)
 btnS.Position = UDim2.new(0.35, 0, 0.3, 0)
@@ -143,7 +144,7 @@ btnS.MouseButton1Click:Connect(function()
     updateTargetDisplay()
 end)
 
--- Tombol I (Innocent) - HIJAU
+-- Tombol I (Innocent)
 local btnI = Instance.new("TextButton")
 btnI.Size = UDim2.new(0.3, -4, 0, 22)
 btnI.Position = UDim2.new(0.68, 0, 0.3, 0)
@@ -208,18 +209,74 @@ local function isTargetAllowed(player)
 end
 
 -- ============================================
--- ESP (HIGHLIGHT + BILLBOARD)
+-- TAB: MAIN (HANYA TOGGLE SEDERHANA)
 -- ============================================
-local TabESP = Window:CreateTab("ESP")
-Window:AddParagraph(TabESP, "ESP Settings", "Toggle ESP and FOV Circle")
+local TabMain = Window:CreateTab("Main")
 
-if CoreGui:FindFirstChild("ESP_Holder") then CoreGui.ESP_Holder:Destroy() end
-if CoreGui:FindFirstChild("W424_FOV") then CoreGui.W424_FOV:Destroy() end
-
+-- ESP TOGGLE
 local espEnabled = false
-local espData = {}
+Window:AddToggle(TabMain, "Enable ESP", "Show ESP based on target selection", false, function(v)
+    espEnabled = v
+    refreshESP()
+end, "ESPToggle")
 
+-- Aimbot TOGGLE
+local aimbotEnabled = false
+local aimTrigger = "On Shoot"
+local fovRadius = 150
+local maxDistance = 300
+local smoothness = 0.5
+local visibilityCheck = true
+local usePrediction = false
+local predictionFactor = 0.2
+local autoShootEnabled = false
+local autoShootDelay = 0.1
+local targetPartName = "HumanoidRootPart"
+
+Window:AddToggle(TabMain, "Aimbot", "Enable aimbot (auto-detects Sheriff)", false, function(v) aimbotEnabled = v end, "AimbotToggle")
+Window:AddDropdown(TabMain, "Trigger", "When to aim", {"On Shoot","Always"}, false, "On Shoot", function(v) aimTrigger = v end, "AimTriggerDrop")
+Window:AddSlider(TabMain, "FOV Radius", "30-400", 30, 400, 150, function(v)
+    fovRadius = v
+    if fovCircle then fovCircle.Size = UDim2.new(0, v * 2, 0, v * 2) end
+end, "FOVRadius", true)
+Window:AddSlider(TabMain, "Max Distance", "50-500", 50, 500, 300, function(v) maxDistance = v end, "MaxDist", true)
+Window:AddSlider(TabMain, "Smoothness", "1-10", 1, 10, 5, function(v) smoothness = v / 10 end, "Smoothness", true)
+Window:AddToggle(TabMain, "Wall Check", "Don't aim through walls", true, function(v) visibilityCheck = v end, "VisCheckToggle")
+Window:AddToggle(TabMain, "Prediction", "Aim ahead", false, function(v) usePrediction = v end, "PredictToggle")
+Window:AddSlider(TabMain, "Pred Factor", "0-100", 0, 100, 20, function(v) predictionFactor = v / 100 end, "PredictFactor", true)
+Window:AddToggle(TabMain, "Auto Shoot", "Shoot automatically", false, function(v) autoShootEnabled = v end, "AutoShootToggle")
+Window:AddSlider(TabMain, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) autoShootDelay = v / 100 end, "AutoShootDelay", true)
+Window:AddDropdown(TabMain, "Target Part", "Body part", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) targetPartName = v end, "TargetPartDrop")
+
+-- Murderer Tools
+Window:AddDivider(TabMain, "Murderer Tools")
+local murdererAutoThrow = false
+local throwTargetMode = "All Players"
+local maxThrowDistance = 300
+local throwCooldown = 2
+local throwPrediction = false
+local throwPredFactor = 0.2
+local throwVisibility = true
+local autoEquipKnife = false
+local autoMeleeEnabled = false
+local meleeRadius = 10
+local lastThrowTime = 0
+
+Window:AddToggle(TabMain, "Auto Throw Knife", "Throw knife automatically", false, function(v) murdererAutoThrow = v end, "AutoThrowToggle")
+Window:AddDropdown(TabMain, "Throw Target", "Who to target", {"All Players","Sheriff Only"}, false, "All Players", function(v) throwTargetMode = v end, "ThrowTargetDrop")
+Window:AddSlider(TabMain, "Max Throw Distance", "50-500", 50, 500, 300, function(v) maxThrowDistance = v end, "ThrowDist", true)
+Window:AddSlider(TabMain, "Throw Cooldown", "0.5-10s", 0.5, 10, 2, function(v) throwCooldown = v end, "ThrowCD", true)
+Window:AddToggle(TabMain, "Throw Prediction", "Aim ahead", false, function(v) throwPrediction = v end, "ThrowPredict")
+Window:AddSlider(TabMain, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) throwPredFactor = v / 100 end, "ThrowPredFactor", true)
+Window:AddToggle(TabMain, "Throw Wall Check", "Don't throw through walls", true, function(v) throwVisibility = v end, "ThrowVis")
+Window:AddToggle(TabMain, "Auto Equip Knife", "Equip knife automatically", false, function(v) autoEquipKnife = v end, "AutoEquipKnife")
+Window:AddDivider(TabMain, "Auto Melee Attack")
+Window:AddToggle(TabMain, "Auto Melee", "Attack nearby enemies", false, function(v) autoMeleeEnabled = v end, "AutoMeleeToggle")
+Window:AddSlider(TabMain, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) meleeRadius = v end, "MeleeRadius", true)
+
+-- ============================================
 -- FOV CIRCLE
+-- ============================================
 local fovGui = Instance.new("ScreenGui")
 fovGui.Name = "W424_FOV"
 fovGui.Parent = CoreGui
@@ -230,7 +287,7 @@ local fovCircle = Instance.new("Frame")
 fovCircle.BackgroundTransparency = 1
 fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
 fovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-fovCircle.Size = UDim2.new(0, 200, 0, 200)
+fovCircle.Size = UDim2.new(0, 300, 0, 300)
 fovCircle.Visible = false
 fovCircle.Parent = fovGui
 local fovStroke = Instance.new("UIStroke", fovCircle)
@@ -240,9 +297,20 @@ fovStroke.Transparency = 0.5
 local fovCorner = Instance.new("UICorner", fovCircle)
 fovCorner.CornerRadius = UDim.new(1, 0)
 
+-- Toggle FOV
+Window:AddToggle(TabMain, "Show FOV Circle", "Display aim FOV", false, function(v)
+    fovCircle.Visible = v
+end, "FovCircleToggle")
+
+-- ============================================
+-- ESP (HIGHLIGHT + BILLBOARD)
+-- ============================================
+if CoreGui:FindFirstChild("ESP_Holder") then CoreGui.ESP_Holder:Destroy() end
 local ESPFolder = Instance.new("Folder")
 ESPFolder.Name = "ESP_Holder"
 ESPFolder.Parent = CoreGui
+
+local espData = {}
 
 local function createESP(player)
     if player == LocalPlayer then return end
@@ -372,81 +440,8 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Toggle ESP
-Window:AddToggle(TabESP, "Enable ESP", "Show ESP based on target selection", false, function(v)
-    espEnabled = v
-    refreshESP()
-end, "ESPToggle")
-
-Window:AddToggle(TabESP, "Show FOV Circle", "Display aim FOV circle", false, function(v)
-    fovCircle.Visible = v
-end, "FovCircleToggle")
-
-Window:AddSlider(TabESP, "FOV Radius", "30-400", 30, 400, 150, function(v)
-    fovCircle.Size = UDim2.new(0, v * 2, 0, v * 2)
-end, "FOVRadius", true)
-
 -- ============================================
--- TAB: AIM
--- ============================================
-local TabAim = Window:CreateTab("Aim")
-Window:AddParagraph(TabAim, "Aimbot & Auto Tools", "Targets based on panel selection")
-
-local aimbotEnabled = false
-local aimTrigger = "On Shoot"
-local fovRadius = 150
-local maxDistance = 300
-local smoothness = 0.5
-local visibilityCheck = true
-local usePrediction = false
-local predictionFactor = 0.2
-local autoShootEnabled = false
-local autoShootDelay = 0.1
-local targetPartName = "HumanoidRootPart"
-
-Window:AddToggle(TabAim, "Aimbot", "Enable aimbot (auto-detects Sheriff)", false, function(v) aimbotEnabled = v end, "AimbotToggle")
-Window:AddDropdown(TabAim, "Trigger", "When to aim", {"On Shoot","Always"}, false, "On Shoot", function(v) aimTrigger = v end, "AimTriggerDrop")
-Window:AddSlider(TabAim, "FOV Radius", "30-400", 30, 400, 150, function(v)
-    fovRadius = v
-    fovCircle.Size = UDim2.new(0, v * 2, 0, v * 2)
-end, "FOVRadius", true)
-Window:AddSlider(TabAim, "Max Distance", "50-500", 50, 500, 300, function(v) maxDistance = v end, "MaxDist", true)
-Window:AddSlider(TabAim, "Smoothness", "1-10", 1, 10, 5, function(v) smoothness = v / 10 end, "Smoothness", true)
-Window:AddToggle(TabAim, "Wall Check", "Don't aim through walls", true, function(v) visibilityCheck = v end, "VisCheckToggle")
-Window:AddToggle(TabAim, "Prediction", "Aim ahead of moving target", false, function(v) usePrediction = v end, "PredictToggle")
-Window:AddSlider(TabAim, "Pred Factor", "0-100", 0, 100, 20, function(v) predictionFactor = v / 100 end, "PredictFactor", true)
-Window:AddToggle(TabAim, "Auto Shoot", "Shoot automatically when on target", false, function(v) autoShootEnabled = v end, "AutoShootToggle")
-Window:AddSlider(TabAim, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) autoShootDelay = v / 100 end, "AutoShootDelay", true)
-Window:AddDropdown(TabAim, "Target Part", "Body part", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) targetPartName = v end, "TargetPartDrop")
-
--- Murderer Tools
-Window:AddDivider(TabAim, "Murderer Tools")
-local murdererAutoThrow = false
-local throwTargetMode = "All Players"
-local maxThrowDistance = 300
-local throwCooldown = 2
-local throwPrediction = false
-local throwPredFactor = 0.2
-local throwVisibility = true
-local autoEquipKnife = false
-local autoMeleeEnabled = false
-local meleeRadius = 10
-local lastThrowTime = 0
-
-Window:AddToggle(TabAim, "Auto Throw Knife", "Throw knife automatically", false, function(v) murdererAutoThrow = v end, "AutoThrowToggle")
-Window:AddDropdown(TabAim, "Throw Target", "Who to target", {"All Players","Sheriff Only"}, false, "All Players", function(v) throwTargetMode = v end, "ThrowTargetDrop")
-Window:AddSlider(TabAim, "Max Throw Distance", "50-500", 50, 500, 300, function(v) maxThrowDistance = v end, "ThrowDist", true)
-Window:AddSlider(TabAim, "Throw Cooldown", "0.5-10s", 0.5, 10, 2, function(v) throwCooldown = v end, "ThrowCD", true)
-Window:AddToggle(TabAim, "Throw Prediction", "Aim ahead", false, function(v) throwPrediction = v end, "ThrowPredict")
-Window:AddSlider(TabAim, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) throwPredFactor = v / 100 end, "ThrowPredFactor", true)
-Window:AddToggle(TabAim, "Throw Wall Check", "Don't throw through walls", true, function(v) throwVisibility = v end, "ThrowVis")
-Window:AddToggle(TabAim, "Auto Equip Knife", "Equip knife automatically", false, function(v) autoEquipKnife = v end, "AutoEquipKnife")
-Window:AddDivider(TabAim, "Auto Melee Attack")
-Window:AddToggle(TabAim, "Auto Melee", "Attack nearby enemies with knife", false, function(v) autoMeleeEnabled = v end, "AutoMeleeToggle")
-Window:AddSlider(TabAim, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) meleeRadius = v end, "MeleeRadius", true)
-
--- ============================================
--- FUNGSI UTAMA
+-- FUNGSI UTAMA AIMBOT
 -- ============================================
 local function isMurderer(player)
     if not player then return false end
@@ -749,4 +744,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ W424HUB Target Panel load.")
+print("✅ W424HUB Target Panel loaded! Click M, S, I buttons to select targets.")
