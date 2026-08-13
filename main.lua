@@ -1,7 +1,7 @@
 -- ============================================
--- W424HUB – V1
+-- W424HUB –
 -- ============================================
-print("=== LOADING W424HUB ===")
+print("=== LOADING ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -24,7 +24,7 @@ local Camera = workspace.CurrentCamera
 local Window = Kairo:CreateWindow({
     Title = "W424HUB",
     Theme = "Ocean",
-    Size = UDim2.fromOffset(530, 430),
+    Size = UDim2.fromOffset(500, 450),
     Center = true,
     Draggable = true,
     Resize = false,
@@ -45,33 +45,41 @@ Window:Notify({
 })
 
 -- ============================================
--- FUNGSI GET ROLE
+-- FUNGSI GET ROLE (DIPERBAIKI)
 -- ============================================
 local function getRole(player)
     if not player then return "Innocent" end
     local char = player.Character
     if not char then return "Innocent" end
-    if char:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife") then
-        return "Murderer"
-    elseif char:FindFirstChild("Gun") or player.Backpack:FindFirstChild("Gun") then
-        return "Sheriff"
-    else
-        return "Innocent"
+
+    -- Cek tool di karakter (tangan)
+    for _, child in ipairs(char:GetChildren()) do
+        if child:IsA("Tool") then
+            if child.Name == "Knife" then return "Murderer" end
+            if child.Name == "Gun" then return "Sheriff" end
+        end
     end
+
+    -- Cek di backpack
+    local backpack = player:FindFirstChildOfClass("Backpack")
+    if backpack then
+        for _, child in ipairs(backpack:GetChildren()) do
+            if child:IsA("Tool") then
+                if child.Name == "Knife" then return "Murderer" end
+                if child.Name == "Gun" then return "Sheriff" end
+            end
+        end
+    end
+
+    return "Innocent"
 end
 
 local function isMurderer(player)
-    if not player then return false end
-    local char = player.Character
-    if not char then return false end
-    return char:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife")
+    return getRole(player) == "Murderer"
 end
 
 local function isSheriff(player)
-    if not player then return false end
-    local char = player.Character
-    if not char then return false end
-    return char:FindFirstChild("Gun") or player.Backpack:FindFirstChild("Gun")
+    return getRole(player) == "Sheriff"
 end
 
 local function CharacterRayOrigin(char)
@@ -639,4 +647,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ W424HUB loaded!")
+print("✅ W424HUB NO BUBBLE loaded")
