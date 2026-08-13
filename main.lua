@@ -1,50 +1,11 @@
 -- ============================================================
--- W424HUB – RAYFIELD UI (MM2 EDITION)
+-- W424HUB – MANUAL UI (NO LIBRARY, WORK IN MM2)
 -- ============================================================
-print("=== LOADING W424HUB RAYFIELD ===")
+print("=== LOADING W424HUB MANUAL ===")
 
--- Tunggu game fully loaded
-task.wait(3)
+-- Tunggu game siap
+task.wait(2)
 
--- Load Rayfield UI
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-if not Rayfield then
-    warn("❌ Rayfield gagal di-load!")
-    return
-end
-
--- ============================================================
--- WINDOW RAYFIELD
--- ============================================================
-local Window = Rayfield:CreateWindow({
-    Name = "W424HUB",
-    LoadingTitle = "W424HUB",
-    LoadingSubtitle = "by W424",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "W424HUB_Config",
-        FileName = "W424HUB"
-    },
-    Discord = {
-        Enabled = false,
-        Invite = "",
-        RememberJoins = true
-    },
-    KeySystem = false,
-    KeySettings = {
-        Title = "W424HUB",
-        Subtitle = "Key System",
-        Note = "No key required",
-        FileName = "W424HUB_Key",
-        SaveKey = true,
-        GrabKeyFromSite = false,
-        Key = {"nil"}
-    }
-})
-
--- ============================================================
--- FUNGSI GET ROLE
--- ============================================================
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -54,8 +15,435 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local StarterGui = game:GetService("StarterGui")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
 
+-- ============================================================
+-- MANUAL UI FRAME
+-- ============================================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "W424HUB_MANUAL"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = CoreGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 220, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -110, 0.5, -200)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+mainFrame.BackgroundTransparency = 0.1
+mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = screenGui
+local mainCorner = Instance.new("UICorner", mainFrame)
+mainCorner.CornerRadius = UDim.new(0, 10)
+local mainStroke = Instance.new("UIStroke", mainFrame)
+mainStroke.Color = Color3.fromRGB(60, 60, 80)
+mainStroke.Thickness = 1.5
+
+-- Title Bar (draggable)
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 28)
+titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+titleBar.BackgroundTransparency = 0.2
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+local titleCorner = Instance.new("UICorner", titleBar)
+titleCorner.CornerRadius = UDim.new(0, 10)
+
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(1, -60, 1, 0)
+titleText.Position = UDim2.new(0, 10, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "W424HUB"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.TextSize = 16
+titleText.Font = Enum.Font.GothamBold
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = titleBar
+
+-- Close Button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 24, 0, 24)
+closeBtn.Position = UDim2.new(1, -28, 0, 2)
+closeBtn.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
+closeBtn.BackgroundTransparency = 0.2
+closeBtn.BorderSizePixel = 0
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+closeBtn.TextSize = 14
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = titleBar
+local closeCorner = Instance.new("UICorner", closeBtn)
+closeCorner.CornerRadius = UDim.new(0, 4)
+
+local function makeDraggable()
+    local dragging = false
+    local dragStart, startPos
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+        end
+    end)
+    titleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+makeDraggable()
+
+closeBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+end)
+
+-- Scrollable content
+local contentFrame = Instance.new("ScrollingFrame")
+contentFrame.Size = UDim2.new(1, -10, 1, -35)
+contentFrame.Position = UDim2.new(0, 5, 0, 32)
+contentFrame.BackgroundTransparency = 1
+contentFrame.BorderSizePixel = 0
+contentFrame.ScrollBarThickness = 4
+contentFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 120)
+contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+contentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+contentFrame.Parent = mainFrame
+
+local contentLayout = Instance.new("UIListLayout")
+contentLayout.Padding = UDim.new(0, 4)
+contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+contentLayout.Parent = contentFrame
+
+-- ============================================================
+-- UI HELPER FUNCTIONS
+-- ============================================================
+local function addLabel(parent, text, color, order)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = color or Color3.fromRGB(200, 200, 220)
+    label.TextSize = 13
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.LayoutOrder = order or 0
+    label.Parent = parent
+    return label
+end
+
+local function addDivider(parent, text, order)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 28)
+    frame.BackgroundTransparency = 1
+    frame.LayoutOrder = order or 0
+    frame.Parent = parent
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text or "──────────"
+    label.TextColor3 = Color3.fromRGB(100, 150, 255)
+    label.TextSize = 12
+    label.Font = Enum.Font.GothamBold
+    label.Parent = frame
+    return frame
+end
+
+local function addToggle(parent, text, default, callback, order)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 32)
+    frame.BackgroundTransparency = 1
+    frame.LayoutOrder = order or 0
+    frame.Parent = parent
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -50, 1, 0)
+    label.Position = UDim2.new(0, 5, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 240)
+    label.TextSize = 12
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(0, 40, 0, 22)
+    toggleBtn.Position = UDim2.new(1, -45, 0.5, -11)
+    toggleBtn.BackgroundColor3 = default and Color3.fromRGB(60, 200, 80) or Color3.fromRGB(60, 60, 80)
+    toggleBtn.BorderSizePixel = 0
+    toggleBtn.Text = default and "ON" or "OFF"
+    toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleBtn.TextSize = 10
+    toggleBtn.Font = Enum.Font.GothamBold
+    toggleBtn.Parent = frame
+    local toggleCorner = Instance.new("UICorner", toggleBtn)
+    toggleCorner.CornerRadius = UDim.new(0, 4)
+
+    local state = default
+    toggleBtn.MouseButton1Click:Connect(function()
+        state = not state
+        toggleBtn.BackgroundColor3 = state and Color3.fromRGB(60, 200, 80) or Color3.fromRGB(60, 60, 80)
+        toggleBtn.Text = state and "ON" or "OFF"
+        if callback then callback(state) end
+    end)
+    return { Set = function(v) state = v; toggleBtn.BackgroundColor3 = v and Color3.fromRGB(60,200,80) or Color3.fromRGB(60,60,80); toggleBtn.Text = v and "ON" or "OFF"; if callback then callback(v) end end }
+end
+
+local function addSlider(parent, text, min, max, default, callback, order)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 45)
+    frame.BackgroundTransparency = 1
+    frame.LayoutOrder = order or 0
+    frame.Parent = parent
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 16)
+    label.Position = UDim2.new(0, 5, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text .. " (" .. tostring(default) .. ")"
+    label.TextColor3 = Color3.fromRGB(220, 220, 240)
+    label.TextSize = 11
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Size = UDim2.new(1, -10, 0, 6)
+    sliderFrame.Position = UDim2.new(0, 5, 0, 20)
+    sliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+    sliderFrame.BorderSizePixel = 0
+    sliderFrame.Parent = frame
+    local sliderCorner = Instance.new("UICorner", sliderFrame)
+    sliderCorner.CornerRadius = UDim.new(0, 3)
+
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(60, 150, 255)
+    fill.BorderSizePixel = 0
+    fill.Parent = sliderFrame
+    local fillCorner = Instance.new("UICorner", fill)
+    fillCorner.CornerRadius = UDim.new(0, 3)
+
+    local knob = Instance.new("TextButton")
+    knob.Size = UDim2.new(0, 14, 0, 14)
+    knob.Position = UDim2.new((default - min) / (max - min), -7, 0.5, -7)
+    knob.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
+    knob.BorderSizePixel = 0
+    knob.Text = ""
+    knob.Parent = frame
+    local knobCorner = Instance.new("UICorner", knob)
+    knobCorner.CornerRadius = UDim.new(0, 7)
+
+    local value = default
+    local dragging = false
+
+    local function updateSlider(newValue)
+        value = math.clamp(newValue, min, max)
+        local percent = (value - min) / (max - min)
+        fill.Size = UDim2.new(percent, 0, 1, 0)
+        knob.Position = UDim2.new(percent, -7, 0.5, -7)
+        label.Text = text .. " (" .. tostring(math.floor(value * 10) / 10) .. ")"
+        if callback then callback(value) end
+    end
+
+    sliderFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            local pos = (input.Position.X - sliderFrame.AbsolutePosition.X) / sliderFrame.AbsoluteSize.X
+            updateSlider(min + pos * (max - min))
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local pos = (input.Position.X - sliderFrame.AbsolutePosition.X) / sliderFrame.AbsoluteSize.X
+            updateSlider(min + pos * (max - min))
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    return { Set = updateSlider, Get = function() return value end }
+end
+
+local function addDropdown(parent, text, options, default, callback, order)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 32)
+    frame.BackgroundTransparency = 1
+    frame.LayoutOrder = order or 0
+    frame.Parent = parent
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.5, -5, 1, 0)
+    label.Position = UDim2.new(0, 5, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 240)
+    label.TextSize = 11
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+
+    local dropdownBtn = Instance.new("TextButton")
+    dropdownBtn.Size = UDim2.new(0.45, -5, 0, 24)
+    dropdownBtn.Position = UDim2.new(0.55, 0, 0.5, -12)
+    dropdownBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+    dropdownBtn.BorderSizePixel = 0
+    dropdownBtn.Text = default or options[1] or ""
+    dropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    dropdownBtn.TextSize = 11
+    dropdownBtn.Font = Enum.Font.Gotham
+    dropdownBtn.Parent = frame
+    local dropdownCorner = Instance.new("UICorner", dropdownBtn)
+    dropdownCorner.CornerRadius = UDim.new(0, 4)
+
+    local selected = default or options[1]
+    local dropdownList = Instance.new("Frame")
+    dropdownList.Size = UDim2.new(0.45, -5, 0, 0)
+    dropdownList.Position = UDim2.new(0.55, 0, 1, 2)
+    dropdownList.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    dropdownList.BorderSizePixel = 0
+    dropdownList.ClipsDescendants = true
+    dropdownList.Visible = false
+    dropdownList.Parent = frame
+    local listCorner = Instance.new("UICorner", dropdownList)
+    listCorner.CornerRadius = UDim.new(0, 4)
+
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.Padding = UDim.new(0, 2)
+    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    listLayout.Parent = dropdownList
+
+    local function updateDropdown()
+        for _, child in ipairs(dropdownList:GetChildren()) do
+            if child:IsA("TextButton") then
+                child.TextColor3 = (child.Text == selected) and Color3.fromRGB(100, 200, 255) or Color3.fromRGB(200, 200, 220)
+            end
+        end
+        dropdownBtn.Text = selected
+        if callback then callback(selected) end
+    end
+
+    for _, option in ipairs(options) do
+        local optBtn = Instance.new("TextButton")
+        optBtn.Size = UDim2.new(1, 0, 0, 24)
+        optBtn.BackgroundTransparency = 0.5
+        optBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+        optBtn.BorderSizePixel = 0
+        optBtn.Text = option
+        optBtn.TextColor3 = (option == selected) and Color3.fromRGB(100, 200, 255) or Color3.fromRGB(200, 200, 220)
+        optBtn.TextSize = 11
+        optBtn.Font = Enum.Font.Gotham
+        optBtn.Parent = dropdownList
+        optBtn.MouseButton1Click:Connect(function()
+            selected = option
+            updateDropdown()
+            dropdownList.Visible = false
+            dropdownList.Size = UDim2.new(0.45, -5, 0, 0)
+        end)
+    end
+
+    dropdownBtn.MouseButton1Click:Connect(function()
+        local isOpen = dropdownList.Visible
+        if isOpen then
+            dropdownList.Visible = false
+            dropdownList.Size = UDim2.new(0.45, -5, 0, 0)
+        else
+            dropdownList.Visible = true
+            local totalHeight = (#options * 26) + 4
+            dropdownList.Size = UDim2.new(0.45, -5, 0, math.min(totalHeight, 120))
+        end
+    end)
+
+    updateDropdown()
+    return { Set = function(v) selected = v; updateDropdown() end }
+end
+
+local function addButton(parent, text, callback, order)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 28)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
+    btn.BorderSizePixel = 0
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 12
+    btn.Font = Enum.Font.GothamBold
+    btn.LayoutOrder = order or 0
+    btn.Parent = parent
+    local btnCorner = Instance.new("UICorner", btn)
+    btnCorner.CornerRadius = UDim.new(0, 4)
+    btn.MouseButton1Click:Connect(function()
+        if callback then callback() end
+    end)
+    return btn
+end
+
+-- ============================================================
+-- VARIABLES
+-- ============================================================
+local espEnabled = false
+local lineEnabled = false
+local aimbotEnabled = false
+local aimTrigger = "On Shoot"
+local aimTargetMode = "Murderer Only"
+local aimFOV = 150
+local aimMaxDist = 300
+local aimSmooth = 0.5
+local aimWall = true
+local aimPrediction = false
+local aimPredFactor = 0.2
+local aimAutoShoot = false
+local aimAutoDelay = 0.1
+local aimTargetPart = "HumanoidRootPart"
+local silentEnabled = false
+local silentTargetMode = "Murderer Only"
+local silentTargetPart = "Head"
+local silentFOV = 180
+local silentMaxDist = 300
+local silentPrediction = true
+local silentPredFactor = 0.15
+local silentVis = true
+local silentAutoShoot = false
+local silentAutoDelay = 0.1
+local lastSilentShot = 0
+local hitboxEnabled = false
+local hitboxSize = 15
+local hitboxAlpha = 0.3
+local hitboxTarget = "All"
+local hitboxLoopRunning = false
+local hitboxLoopStop = false
+local originalSizes = {}
+local reduceMap = false
+local noRecoil = false
+local noSpread = false
+local antiRagdoll = false
+local murdererThrow = false
+local murdererThrowTarget = "All Players"
+local murdererThrowDist = 300
+local murdererThrowCD = 2
+local murdererThrowPred = false
+local murdererThrowPredFactor = 0.2
+local murdererThrowWall = true
+local murdererAutoEquip = false
+local murdererMelee = false
+local murdererMeleeRadius = 10
+local lastThrowTime = 0
+
+-- ============================================================
+-- FUNGSI GET ROLE
+-- ============================================================
 local function getRole(player)
     if not player or not player.Character then return "Innocent" end
     local backpack = player:FindFirstChild("Backpack")
@@ -78,7 +466,7 @@ local function getRole(player)
 end
 
 -- ============================================================
--- FUNGSI HELPER
+-- HELPER FUNCTIONS
 -- ============================================================
 local function CharacterRayOrigin(char)
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -109,29 +497,12 @@ local function getShootRemote()
 end
 
 -- ============================================================
--- TAB: MAIN
+-- ESP
 -- ============================================================
-local MainTab = Window:CreateTab("Main", 4483362458)
-
--- ============================================================
--- 1. ESP
--- ============================================================
-local SectionESP = MainTab:CreateSection("ESP")
-
-local espEnabled = false
 local espData = {}
 local ESPFolder = Instance.new("Folder")
 ESPFolder.Name = "ESP_Holder"
 ESPFolder.Parent = CoreGui
-
-MainTab:CreateToggle({
-    Name = "Enable ESP",
-    CurrentValue = false,
-    Callback = function(v)
-        espEnabled = v
-        refreshESP()
-    end
-})
 
 local function updateESP(player)
     local data = espData[player]
@@ -240,34 +611,14 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- ============================================================
--- 2. LINE ESP
+-- LINE ESP
 -- ============================================================
-local lineEnabled = false
-local lineColor = Color3.fromRGB(0,255,255)
-local lineThick = 1.5
 local lineObjects = {}
 local lineGui = Instance.new("ScreenGui")
 lineGui.Name = "LineESP"
 lineGui.Parent = CoreGui
 lineGui.ResetOnSpawn = false
 lineGui.IgnoreGuiInset = true
-
-MainTab:CreateToggle({
-    Name = "Enable Line ESP",
-    CurrentValue = false,
-    Callback = function(v)
-        lineEnabled = v
-        if not v then clearLines() end
-    end
-})
-
-MainTab:CreateColorPicker({
-    Name = "Line Color",
-    Default = Color3.fromRGB(0,255,255),
-    Callback = function(c)
-        lineColor = c
-    end
-})
 
 local function clearLines()
     for _, obj in pairs(lineObjects) do if obj then obj:Destroy() end end
@@ -290,7 +641,7 @@ RunService.Heartbeat:Connect(function()
                 if on2 then
                     if not lineObjects[player] then
                         local line = Instance.new("Frame")
-                        line.BackgroundColor3 = lineColor
+                        line.BackgroundColor3 = Color3.fromRGB(0,255,255)
                         line.BackgroundTransparency = 0.4
                         line.BorderSizePixel = 0
                         line.Parent = lineGui
@@ -302,9 +653,9 @@ RunService.Heartbeat:Connect(function()
                     local length = math.sqrt(dx*dx + dy*dy)
                     local angle = math.atan2(dy, dx)
                     line.Position = UDim2.new(0, myPos.X, 0, myPos.Y)
-                    line.Size = UDim2.new(0, length, 0, lineThick)
+                    line.Size = UDim2.new(0, length, 0, 1.5)
                     line.Rotation = math.deg(angle)
-                    line.BackgroundColor3 = lineColor
+                    line.BackgroundColor3 = Color3.fromRGB(0,255,255)
                     line.Visible = true
                 else
                     if lineObjects[player] then lineObjects[player].Visible = false end
@@ -315,7 +666,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- ============================================================
--- 3. FOV CIRCLE
+-- FOV CIRCLE
 -- ============================================================
 local fovVisible = false
 local fovRadius = 150
@@ -338,130 +689,9 @@ fovStroke.Transparency = 0.5
 local fovCorner = Instance.new("UICorner", fovCircle)
 fovCorner.CornerRadius = UDim.new(1,0)
 
-MainTab:CreateToggle({
-    Name = "Show FOV Circle",
-    CurrentValue = false,
-    Callback = function(v)
-        fovVisible = v
-        fovCircle.Visible = v
-    end
-})
-
-MainTab:CreateSlider({
-    Name = "FOV Radius",
-    Range = {30, 400},
-    Increment = 5,
-    CurrentValue = 150,
-    Callback = function(v)
-        fovRadius = v
-        fovCircle.Size = UDim2.new(0, v*2, 0, v*2)
-    end
-})
-
 -- ============================================================
--- 4. AIMBOT (CAMERA)
+-- FUNGSI GET TARGET
 -- ============================================================
-local aimbotEnabled = false
-local aimTrigger = "On Shoot"
-local aimTargetMode = "Murderer Only"
-local aimFOV = 150
-local aimMaxDist = 300
-local aimSmooth = 0.5
-local aimWall = true
-local aimPrediction = false
-local aimPredFactor = 0.2
-local aimAutoShoot = false
-local aimAutoDelay = 0.1
-local aimTargetPart = "HumanoidRootPart"
-
-MainTab:CreateSection("Aimbot (Camera)")
-
-MainTab:CreateToggle({
-    Name = "Enable Aimbot",
-    CurrentValue = false,
-    Callback = function(v) aimbotEnabled = v end
-})
-
-MainTab:CreateDropdown({
-    Name = "Trigger",
-    Options = {"On Shoot", "Always"},
-    CurrentOption = "On Shoot",
-    Callback = function(v) aimTrigger = v end
-})
-
-MainTab:CreateDropdown({
-    Name = "Target",
-    Options = {"Murderer Only", "All Players"},
-    CurrentOption = "Murderer Only",
-    Callback = function(v) aimTargetMode = v end
-})
-
-MainTab:CreateSlider({
-    Name = "FOV",
-    Range = {30, 400},
-    Increment = 5,
-    CurrentValue = 150,
-    Callback = function(v) aimFOV = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Max Distance",
-    Range = {50, 500},
-    Increment = 10,
-    CurrentValue = 300,
-    Callback = function(v) aimMaxDist = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Smoothness",
-    Range = {1, 10},
-    Increment = 1,
-    CurrentValue = 5,
-    Callback = function(v) aimSmooth = v/10 end
-})
-
-MainTab:CreateToggle({
-    Name = "Wall Check",
-    CurrentValue = true,
-    Callback = function(v) aimWall = v end
-})
-
-MainTab:CreateToggle({
-    Name = "Prediction",
-    CurrentValue = false,
-    Callback = function(v) aimPrediction = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Pred Factor",
-    Range = {0, 100},
-    Increment = 5,
-    CurrentValue = 20,
-    Callback = function(v) aimPredFactor = v/100 end
-})
-
-MainTab:CreateToggle({
-    Name = "Auto Shoot",
-    CurrentValue = false,
-    Callback = function(v) aimAutoShoot = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Auto Shoot Delay",
-    Range = {5, 50},
-    Increment = 1,
-    CurrentValue = 10,
-    Callback = function(v) aimAutoDelay = v/100 end
-})
-
-MainTab:CreateDropdown({
-    Name = "Target Part",
-    Options = {"Head", "HumanoidRootPart", "Torso"},
-    CurrentOption = "HumanoidRootPart",
-    Callback = function(v) aimTargetPart = v end
-})
-
--- Aimbot logic
 local function getAimbotTargets()
     local targets = {}
     local myChar = LocalPlayer.Character
@@ -493,112 +723,9 @@ local function getAimbotTargets()
     return targets
 end
 
-RunService.RenderStepped:Connect(function(dt)
-    if not aimbotEnabled then return end
-    local myChar = LocalPlayer.Character
-    if not myChar then return end
-    local hasGun = false
-    for _, tool in ipairs(myChar:GetChildren()) do
-        if tool:IsA("Tool") and (tool.Name:lower():find("gun") or tool.Name:lower():find("revolver") or tool.Name:lower():find("pistol") or tool.Name:lower():find("sheriff")) then
-            hasGun = true; break
-        end
-    end
-    if not hasGun then return end
-    local canAim = (aimTrigger == "Always") or (aimTrigger == "On Shoot" and isShooting())
-    if not canAim then return end
-    local targets = getAimbotTargets()
-    if #targets == 0 then return end
-    local target = targets[1]
-    local targetPos = target.Position
-    local currentCF = Camera.CFrame
-    local targetCF = CFrame.new(currentCF.Position, targetPos)
-    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
-    if onScreen then
-        local center = Camera.ViewportSize / 2
-        local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-        if dist > aimFOV then return end
-    else return end
-    if aimSmooth < 1 then
-        local lerpFactor = 1 - math.exp(-aimSmooth * dt * 5)
-        Camera.CFrame = currentCF:Lerp(targetCF, lerpFactor)
-    else
-        Camera.CFrame = targetCF
-    end
-    if aimAutoShoot then
-        local center = Camera.ViewportSize / 2
-        local pos, on = Camera:WorldToViewportPoint(target.Position)
-        if on and (Vector2.new(pos.X, pos.Y) - center).Magnitude < 15 then
-            pcall(function()
-                local origin = CharacterRayOrigin(myChar)
-                if origin and target.Part then
-                    local hitPart = target.Part
-                    local targetPos2 = hitPart.Position
-                    local remote = getShootRemote()
-                    if remote then remote:FireServer(origin, targetPos2, hitPart, targetPos2) end
-                    local tool = myChar:FindFirstChildOfClass("Tool")
-                    if tool and tool:FindFirstChild("Fire") then tool.Fire:Play() end
-                    task.wait(aimAutoDelay)
-                end
-            end)
-        end
-    end
-end)
-
 -- ============================================================
--- 5. SILENT AIM
+-- SILENT AIM TARGET
 -- ============================================================
-MainTab:CreateSection("Silent Aim")
-
-local silentEnabled = false
-local silentTargetMode = "Murderer Only"
-local silentTargetPart = "Head"
-local silentFOV = 180
-local silentMaxDist = 300
-local silentPrediction = true
-local silentPredFactor = 0.15
-local silentVis = true
-local silentAutoShoot = false
-local silentAutoDelay = 0.1
-local lastSilentShot = 0
-local shootRemote = nil
-local originalFire = nil
-
-local function setupSilentAim()
-    shootRemote = getShootRemote()
-    if not shootRemote then return end
-    if originalFire then return end
-    originalFire = shootRemote.FireServer
-    shootRemote.FireServer = function(self, ...)
-        if silentEnabled then
-            local args = {...}
-            local myChar = LocalPlayer.Character
-            if myChar then
-                local hasGun = false
-                for _, tool in ipairs(myChar:GetChildren()) do
-                    if tool:IsA("Tool") and (tool.Name:lower():find("gun") or tool.Name:lower():find("revolver") or tool.Name:lower():find("pistol") or tool.Name:lower():find("sheriff")) then
-                        hasGun = true
-                        break
-                    end
-                end
-                if hasGun and #args >= 4 then
-                    local targetPart = GetClosestSilentTarget()
-                    if targetPart then
-                        local origin = args[1]
-                        if origin and typeof(origin) == "Vector3" then
-                            local newTargetPos = targetPart.Position
-                            args[2] = newTargetPos
-                            args[3] = targetPart
-                            args[4] = newTargetPos
-                            return originalFire(self, unpack(args))
-                        end
-                    end
-                end
-            end
-        end
-        return originalFire(self, ...)
-    end
-end
-
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
 
@@ -656,165 +783,9 @@ local function GetClosestSilentTarget()
     return closest
 end
 
-MainTab:CreateToggle({
-    Name = "Enable Silent Aim",
-    CurrentValue = false,
-    Callback = function(v)
-        silentEnabled = v
-        if v then setupSilentAim() end
-    end
-})
-
-MainTab:CreateDropdown({
-    Name = "Silent Target",
-    Options = {"Murderer Only", "All Players"},
-    CurrentOption = "Murderer Only",
-    Callback = function(v) silentTargetMode = v end
-})
-
-MainTab:CreateDropdown({
-    Name = "Silent Part",
-    Options = {"Head", "HumanoidRootPart", "Torso"},
-    CurrentOption = "Head",
-    Callback = function(v) silentTargetPart = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Silent FOV",
-    Range = {30, 400},
-    Increment = 5,
-    CurrentValue = 180,
-    Callback = function(v) silentFOV = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Silent Max Dist",
-    Range = {50, 500},
-    Increment = 10,
-    CurrentValue = 300,
-    Callback = function(v) silentMaxDist = v end
-})
-
-MainTab:CreateToggle({
-    Name = "Silent Prediction",
-    CurrentValue = true,
-    Callback = function(v) silentPrediction = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Silent Pred Factor",
-    Range = {0, 100},
-    Increment = 5,
-    CurrentValue = 15,
-    Callback = function(v) silentPredFactor = v/100 end
-})
-
-MainTab:CreateToggle({
-    Name = "Silent Vis Check",
-    CurrentValue = true,
-    Callback = function(v) silentVis = v end
-})
-
-MainTab:CreateToggle({
-    Name = "Silent Auto Shoot",
-    CurrentValue = false,
-    Callback = function(v) silentAutoShoot = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Silent Auto Delay",
-    Range = {5, 50},
-    Increment = 1,
-    CurrentValue = 10,
-    Callback = function(v) silentAutoDelay = v/100 end
-})
-
-RunService.RenderStepped:Connect(function()
-    if not silentEnabled or not silentAutoShoot then return end
-    local now = tick()
-    if now - lastSilentShot < silentAutoDelay then return end
-    local myChar = LocalPlayer.Character
-    if not myChar then return end
-    local hasGun = false
-    for _, tool in ipairs(myChar:GetChildren()) do
-        if tool:IsA("Tool") and (tool.Name:lower():find("gun") or tool.Name:lower():find("revolver") or tool.Name:lower():find("pistol") or tool.Name:lower():find("sheriff")) then
-            hasGun = true
-            break
-        end
-    end
-    if not hasGun then return end
-    local targetPart = GetClosestSilentTarget()
-    if not targetPart then return end
-    local center = Camera.ViewportSize / 2
-    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
-    if onScreen then
-        local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-        if dist > silentFOV then return end
-    else return end
-    local remote = getShootRemote()
-    if remote then
-        local origin = Camera.CFrame.Position
-        local targetPos = targetPart.Position
-        pcall(function()
-            remote:FireServer(origin, targetPos, targetPart, targetPos)
-            local tool = myChar:FindFirstChildOfClass("Tool")
-            if tool and tool:FindFirstChild("Fire") then tool.Fire:Play() end
-            lastSilentShot = tick()
-        end)
-    end
-end)
-
 -- ============================================================
--- 6. HITBOX EXPANSION
+-- HITBOX EXPANSION
 -- ============================================================
-MainTab:CreateSection("Hitbox Expansion")
-local hitboxEnabled = false
-local hitboxSize = 15
-local hitboxAlpha = 0.3
-local hitboxTarget = "All"
-local hitboxLoopRunning = false
-local hitboxLoopStop = false
-local originalSizes = {}
-
-MainTab:CreateToggle({
-    Name = "Enable Hitbox Expansion",
-    CurrentValue = false,
-    Callback = function(v)
-        hitboxEnabled = v
-        if v then startHitboxLoop() else stopHitboxLoop() end
-    end
-})
-
-MainTab:CreateDropdown({
-    Name = "Target Parts",
-    Options = {"All", "Head", "Torso", "Legs"},
-    CurrentOption = "All",
-    Callback = function(v)
-        hitboxTarget = v
-        if hitboxEnabled then
-            stopHitboxLoop()
-            task.wait(0.2)
-            startHitboxLoop()
-        end
-    end
-})
-
-MainTab:CreateSlider({
-    Name = "Hitbox Size",
-    Range = {1, 30},
-    Increment = 1,
-    CurrentValue = 15,
-    Callback = function(v) hitboxSize = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Hitbox Alpha",
-    Range = {0, 10},
-    Increment = 1,
-    CurrentValue = 3,
-    Callback = function(v) hitboxAlpha = v/10 end
-})
-
 local function getHitboxParts(character)
     local parts = {}
     if not character then return parts end
@@ -914,90 +885,8 @@ local function stopHitboxLoop()
 end
 
 -- ============================================================
--- 7. MURDERER TOOLS
+-- MURDERER TOOLS
 -- ============================================================
-MainTab:CreateSection("Murderer Tools")
-local murdererThrow = false
-local murdererThrowTarget = "All Players"
-local murdererThrowDist = 300
-local murdererThrowCD = 2
-local murdererThrowPred = false
-local murdererThrowPredFactor = 0.2
-local murdererThrowWall = true
-local murdererAutoEquip = false
-local murdererMelee = false
-local murdererMeleeRadius = 10
-local lastThrowTime = 0
-
-MainTab:CreateToggle({
-    Name = "Auto Throw Knife",
-    CurrentValue = false,
-    Callback = function(v) murdererThrow = v end
-})
-
-MainTab:CreateDropdown({
-    Name = "Throw Target",
-    Options = {"All Players", "Sheriff Only", "Innocent Only"},
-    CurrentOption = "All Players",
-    Callback = function(v) murdererThrowTarget = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Throw Max Dist",
-    Range = {50, 500},
-    Increment = 10,
-    CurrentValue = 300,
-    Callback = function(v) murdererThrowDist = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Throw Cooldown",
-    Range = {5, 100},
-    Increment = 1,
-    CurrentValue = 20,
-    Callback = function(v) murdererThrowCD = v/10 end
-})
-
-MainTab:CreateToggle({
-    Name = "Throw Prediction",
-    CurrentValue = false,
-    Callback = function(v) murdererThrowPred = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Throw Pred Factor",
-    Range = {0, 100},
-    Increment = 5,
-    CurrentValue = 20,
-    Callback = function(v) murdererThrowPredFactor = v/100 end
-})
-
-MainTab:CreateToggle({
-    Name = "Throw Wall Check",
-    CurrentValue = true,
-    Callback = function(v) murdererThrowWall = v end
-})
-
-MainTab:CreateToggle({
-    Name = "Auto Equip Knife",
-    CurrentValue = false,
-    Callback = function(v) murdererAutoEquip = v end
-})
-
-MainTab:CreateToggle({
-    Name = "Auto Melee",
-    CurrentValue = false,
-    Callback = function(v) murdererMelee = v end
-})
-
-MainTab:CreateSlider({
-    Name = "Melee Radius",
-    Range = {3, 30},
-    Increment = 1,
-    CurrentValue = 10,
-    Callback = function(v) murdererMeleeRadius = v end
-})
-
 local function equipKnife()
     local char = LocalPlayer.Character
     if not char then return false end
@@ -1152,31 +1041,105 @@ task.spawn(function()
 end)
 
 -- ============================================================
--- 8. PLAYER MODS
+-- BUILD UI
 -- ============================================================
-MainTab:CreateSection("Player Mods")
-local noRecoil = false
-local noSpread = false
-local antiRagdoll = false
+addDivider(contentFrame, "─── ESP ───", 0)
+local espToggle = addToggle(contentFrame, "ESP", false, function(v) espEnabled = v; refreshESP() end, 1)
+addToggle(contentFrame, "Line ESP", false, function(v) lineEnabled = v; if not v then clearLines() end end, 2)
 
-MainTab:CreateToggle({
-    Name = "No Recoil",
-    CurrentValue = false,
-    Callback = function(v) noRecoil = v end
-})
+addDivider(contentFrame, "─── FOV ───", 3)
+addToggle(contentFrame, "Show FOV", false, function(v) fovVisible = v; fovCircle.Visible = v end, 4)
+addSlider(contentFrame, "FOV Radius", 30, 400, 150, function(v) fovRadius = v; fovCircle.Size = UDim2.new(0, v*2, 0, v*2) end, 5)
 
-MainTab:CreateToggle({
-    Name = "No Spread",
-    CurrentValue = false,
-    Callback = function(v) noSpread = v end
-})
+addDivider(contentFrame, "─── AIMBOT ───", 6)
+addToggle(contentFrame, "Aimbot (Camera)", false, function(v) aimbotEnabled = v end, 7)
+addDropdown(contentFrame, "Trigger", {"On Shoot", "Always"}, "On Shoot", function(v) aimTrigger = v end, 8)
+addDropdown(contentFrame, "Target", {"Murderer Only", "All Players"}, "Murderer Only", function(v) aimTargetMode = v end, 9)
+addSlider(contentFrame, "FOV", 30, 400, 150, function(v) aimFOV = v end, 10)
+addSlider(contentFrame, "Max Distance", 50, 500, 300, function(v) aimMaxDist = v end, 11)
+addSlider(contentFrame, "Smoothness", 1, 10, 5, function(v) aimSmooth = v/10 end, 12)
+addToggle(contentFrame, "Wall Check", true, function(v) aimWall = v end, 13)
+addToggle(contentFrame, "Prediction", false, function(v) aimPrediction = v end, 14)
+addSlider(contentFrame, "Pred Factor", 0, 100, 20, function(v) aimPredFactor = v/100 end, 15)
+addToggle(contentFrame, "Auto Shoot", false, function(v) aimAutoShoot = v end, 16)
+addSlider(contentFrame, "Auto Delay", 5, 50, 10, function(v) aimAutoDelay = v/100 end, 17)
+addDropdown(contentFrame, "Target Part", {"Head", "HumanoidRootPart", "Torso"}, "HumanoidRootPart", function(v) aimTargetPart = v end, 18)
 
-MainTab:CreateToggle({
-    Name = "Anti Ragdoll",
-    CurrentValue = false,
-    Callback = function(v) antiRagdoll = v end
-})
+addDivider(contentFrame, "─── SILENT AIM ───", 19)
+local silentToggle = addToggle(contentFrame, "Silent Aim", false, function(v) silentEnabled = v; if v then setupSilentAim() end end, 20)
+addDropdown(contentFrame, "Silent Target", {"Murderer Only", "All Players"}, "Murderer Only", function(v) silentTargetMode = v end, 21)
+addDropdown(contentFrame, "Silent Part", {"Head", "HumanoidRootPart", "Torso"}, "Head", function(v) silentTargetPart = v end, 22)
+addSlider(contentFrame, "Silent FOV", 30, 400, 180, function(v) silentFOV = v end, 23)
+addSlider(contentFrame, "Silent Max Dist", 50, 500, 300, function(v) silentMaxDist = v end, 24)
+addToggle(contentFrame, "Silent Prediction", true, function(v) silentPrediction = v end, 25)
+addSlider(contentFrame, "Silent Pred Factor", 0, 100, 15, function(v) silentPredFactor = v/100 end, 26)
+addToggle(contentFrame, "Silent Vis Check", true, function(v) silentVis = v end, 27)
+addToggle(contentFrame, "Silent Auto Shoot", false, function(v) silentAutoShoot = v end, 28)
+addSlider(contentFrame, "Silent Auto Delay", 5, 50, 10, function(v) silentAutoDelay = v/100 end, 29)
 
+addDivider(contentFrame, "─── HITBOX ───", 30)
+addToggle(contentFrame, "Hitbox Expansion", false, function(v) hitboxEnabled = v; if v then startHitboxLoop() else stopHitboxLoop() end end, 31)
+addDropdown(contentFrame, "Target Parts", {"All", "Head", "Torso", "Legs"}, "All", function(v) hitboxTarget = v; if hitboxEnabled then stopHitboxLoop(); task.wait(0.2); startHitboxLoop() end end, 32)
+addSlider(contentFrame, "Hitbox Size", 1, 30, 15, function(v) hitboxSize = v end, 33)
+addSlider(contentFrame, "Hitbox Alpha", 0, 10, 3, function(v) hitboxAlpha = v/10 end, 34)
+addButton(contentFrame, "Reset Hitbox", function()
+    stopHitboxLoop()
+    hitboxEnabled = false
+    task.wait(0.3)
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local parts = getHitboxParts(player.Character)
+            for _, part in ipairs(parts) do
+                pcall(function() restoreOriginalSize(part) end)
+            end
+        end
+    end
+end, 35)
+
+addDivider(contentFrame, "─── MURDERER ───", 36)
+addToggle(contentFrame, "Auto Throw Knife", false, function(v) murdererThrow = v end, 37)
+addDropdown(contentFrame, "Throw Target", {"All Players", "Sheriff Only", "Innocent Only"}, "All Players", function(v) murdererThrowTarget = v end, 38)
+addSlider(contentFrame, "Throw Max Dist", 50, 500, 300, function(v) murdererThrowDist = v end, 39)
+addSlider(contentFrame, "Throw Cooldown", 5, 100, 20, function(v) murdererThrowCD = v/10 end, 40)
+addToggle(contentFrame, "Throw Prediction", false, function(v) murdererThrowPred = v end, 41)
+addSlider(contentFrame, "Throw Pred Factor", 0, 100, 20, function(v) murdererThrowPredFactor = v/100 end, 42)
+addToggle(contentFrame, "Throw Wall Check", true, function(v) murdererThrowWall = v end, 43)
+addToggle(contentFrame, "Auto Equip Knife", false, function(v) murdererAutoEquip = v end, 44)
+addToggle(contentFrame, "Auto Melee", false, function(v) murdererMelee = v end, 45)
+addSlider(contentFrame, "Melee Radius", 3, 30, 10, function(v) murdererMeleeRadius = v end, 46)
+
+addDivider(contentFrame, "─── PLAYER MODS ───", 47)
+addToggle(contentFrame, "No Recoil", false, function(v) noRecoil = v end, 48)
+addToggle(contentFrame, "No Spread", false, function(v) noSpread = v end, 49)
+addToggle(contentFrame, "Anti Ragdoll", false, function(v) antiRagdoll = v end, 50)
+
+addDivider(contentFrame, "─── OPTIMIZATION ───", 51)
+addToggle(contentFrame, "Reduce Map", false, function(v)
+    reduceMap = v
+    pcall(function()
+        if v then
+            StarterGui:SetCore("MinimapEnabled", false)
+            for _, gui in ipairs(CoreGui:GetChildren()) do
+                if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = false end
+            end
+            for _, gui in ipairs(LocalPlayer.PlayerGui:GetChildren()) do
+                if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = false end
+            end
+        else
+            StarterGui:SetCore("MinimapEnabled", true)
+            for _, gui in ipairs(CoreGui:GetChildren()) do
+                if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = true end
+            end
+            for _, gui in ipairs(LocalPlayer.PlayerGui:GetChildren()) do
+                if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = true end
+            end
+        end
+    end)
+end, 52)
+
+-- ============================================================
+-- PLAYER MODS LOOP
+-- ============================================================
 RunService.RenderStepped:Connect(function()
     local char = LocalPlayer.Character
     if not char then return
@@ -1211,45 +1174,168 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ============================================================
--- 9. REDUCE MAP
+-- AIMBOT LOOP
 -- ============================================================
-MainTab:CreateSection("Optimization")
-local reduceMap = false
+local function getAimbotTargets()
+    local targets = {}
+    local myChar = LocalPlayer.Character
+    if not myChar then return targets end
+    local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return targets end
+    local myPos = myRoot.Position
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        local char = player.Character
+        if not char then continue end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum or hum.Health <= 0 then continue end
+        local role = getRole(player)
+        if aimTargetMode == "Murderer Only" and role ~= "Murderer" then continue end
+        local part = char:FindFirstChild(aimTargetPart) or char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
+        if not part then continue end
+        local targetPos = part.Position
+        if aimPrediction then
+            local vel = part.Velocity or Vector3.new()
+            targetPos = targetPos + (vel * aimPredFactor)
+        end
+        local dist = (targetPos - myPos).Magnitude
+        if dist > aimMaxDist then continue end
+        if aimWall and not hasClearLOS(myPos, targetPos, myChar, char) then continue end
+        table.insert(targets, { Player = player, Part = part, Position = targetPos, Distance = dist })
+    end
+    table.sort(targets, function(a,b) return a.Distance < b.Distance end)
+    return targets
+end
 
-MainTab:CreateToggle({
-    Name = "Reduce Map",
-    CurrentValue = false,
-    Callback = function(v)
-        reduceMap = v
-        pcall(function()
-            if v then
-                StarterGui:SetCore("MinimapEnabled", false)
-                for _, gui in ipairs(CoreGui:GetChildren()) do
-                    if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = false end
+RunService.RenderStepped:Connect(function(dt)
+    if not aimbotEnabled then return end
+    local myChar = LocalPlayer.Character
+    if not myChar then return end
+    local hasGun = false
+    for _, tool in ipairs(myChar:GetChildren()) do
+        if tool:IsA("Tool") and (tool.Name:lower():find("gun") or tool.Name:lower():find("revolver") or tool.Name:lower():find("pistol") or tool.Name:lower():find("sheriff")) then
+            hasGun = true; break
+        end
+    end
+    if not hasGun then return end
+    local canAim = (aimTrigger == "Always") or (aimTrigger == "On Shoot" and isShooting())
+    if not canAim then return end
+    local targets = getAimbotTargets()
+    if #targets == 0 then return end
+    local target = targets[1]
+    local targetPos = target.Position
+    local currentCF = Camera.CFrame
+    local targetCF = CFrame.new(currentCF.Position, targetPos)
+    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
+    if onScreen then
+        local center = Camera.ViewportSize / 2
+        local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+        if dist > aimFOV then return end
+    else return end
+    if aimSmooth < 1 then
+        local lerpFactor = 1 - math.exp(-aimSmooth * dt * 5)
+        Camera.CFrame = currentCF:Lerp(targetCF, lerpFactor)
+    else
+        Camera.CFrame = targetCF
+    end
+    if aimAutoShoot then
+        local center = Camera.ViewportSize / 2
+        local pos, on = Camera:WorldToViewportPoint(target.Position)
+        if on and (Vector2.new(pos.X, pos.Y) - center).Magnitude < 15 then
+            pcall(function()
+                local origin = CharacterRayOrigin(myChar)
+                if origin and target.Part then
+                    local hitPart = target.Part
+                    local targetPos2 = hitPart.Position
+                    local remote = getShootRemote()
+                    if remote then remote:FireServer(origin, targetPos2, hitPart, targetPos2) end
+                    local tool = myChar:FindFirstChildOfClass("Tool")
+                    if tool and tool:FindFirstChild("Fire") then tool.Fire:Play() end
+                    task.wait(aimAutoDelay)
                 end
-                for _, gui in ipairs(LocalPlayer.PlayerGui:GetChildren()) do
-                    if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = false end
+            end)
+        end
+    end
+end)
+
+-- ============================================================
+-- SILENT AIM (OVERRIDE REMOTE)
+-- ============================================================
+local shootRemote = nil
+local originalFire = nil
+
+local function setupSilentAim()
+    shootRemote = getShootRemote()
+    if not shootRemote then return end
+    if originalFire then return end
+    originalFire = shootRemote.FireServer
+    shootRemote.FireServer = function(self, ...)
+        if silentEnabled then
+            local args = {...}
+            local myChar = LocalPlayer.Character
+            if myChar then
+                local hasGun = false
+                for _, tool in ipairs(myChar:GetChildren()) do
+                    if tool:IsA("Tool") and (tool.Name:lower():find("gun") or tool.Name:lower():find("revolver") or tool.Name:lower():find("pistol") or tool.Name:lower():find("sheriff")) then
+                        hasGun = true
+                        break
+                    end
                 end
-            else
-                StarterGui:SetCore("MinimapEnabled", true)
-                for _, gui in ipairs(CoreGui:GetChildren()) do
-                    if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = true end
-                end
-                for _, gui in ipairs(LocalPlayer.PlayerGui:GetChildren()) do
-                    if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = true end
+                if hasGun and #args >= 4 then
+                    local targetPart = GetClosestSilentTarget()
+                    if targetPart then
+                        local origin = args[1]
+                        if origin and typeof(origin) == "Vector3" then
+                            local newTargetPos = targetPart.Position
+                            args[2] = newTargetPos
+                            args[3] = targetPart
+                            args[4] = newTargetPos
+                            return originalFire(self, unpack(args))
+                        end
+                    end
                 end
             end
+        end
+        return originalFire(self, ...)
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if not silentEnabled or not silentAutoShoot then return end
+    local now = tick()
+    if now - lastSilentShot < silentAutoDelay then return end
+    local myChar = LocalPlayer.Character
+    if not myChar then return end
+    local hasGun = false
+    for _, tool in ipairs(myChar:GetChildren()) do
+        if tool:IsA("Tool") and (tool.Name:lower():find("gun") or tool.Name:lower():find("revolver") or tool.Name:lower():find("pistol") or tool.Name:lower():find("sheriff")) then
+            hasGun = true
+            break
+        end
+    end
+    if not hasGun then return end
+    local targetPart = GetClosestSilentTarget()
+    if not targetPart then return end
+    local center = Camera.ViewportSize / 2
+    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+    if onScreen then
+        local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+        if dist > silentFOV then return end
+    else return end
+    local remote = getShootRemote()
+    if remote then
+        local origin = Camera.CFrame.Position
+        local targetPos = targetPart.Position
+        pcall(function()
+            remote:FireServer(origin, targetPos, targetPart, targetPos)
+            local tool = myChar:FindFirstChildOfClass("Tool")
+            if tool and tool:FindFirstChild("Fire") then tool.Fire:Play() end
+            lastSilentShot = tick()
         end)
     end
-})
+end)
 
 -- ============================================================
--- NOTIFIKASI SELESAI
+-- FINISH
 -- ============================================================
-Rayfield:Notify({
-    Title = "W424HUB",
-    Content = "Loaded successfully!",
-    Duration = 5
-})
-
-print("✅ W424HUB RAYFIELD loaded – All features ready!")
+print("✅ W424HUB MANUAL loaded – No external library!")
