@@ -1,7 +1,7 @@
 -- ============================================
--- W424HUB – TANPA BUBBLE (SHERIFF & MURDERER TABS)
+-- W424HUB – V1
 -- ============================================
-print("=== LOADING W424HUB NO BUBBLE ===")
+print("=== LOADING W424HUB ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -39,7 +39,7 @@ if not Window then return end
 Window:Notify({
     Title = "W424HUB",
     Description = "Loaded successfully!",
-    Content = "Sheriff & Murderer Tabs (No Bubble)",
+    Content = "Sheriff & Murderer Tabs",
     Color = Color3.fromRGB(0, 200, 50),
     Delay = 3
 })
@@ -99,10 +99,9 @@ end
 local TabSheriff = Window:CreateTab("Sheriff")
 Window:AddParagraph(TabSheriff, "Sheriff Aimbot", "Aktif jika memegang Gun")
 
--- Variabel Sheriff
 local sheriffAimbot = false
 local sheriffTrigger = "On Shoot"
-local sheriffTargetMode = "Murderer Only"  -- Murderer Only / All Players / Innocent Only
+local sheriffTargetMode = "Murderer Only"
 local sheriffFOV = 150
 local sheriffDistance = 300
 local sheriffSmooth = 0.5
@@ -113,19 +112,18 @@ local sheriffAutoShoot = false
 local sheriffAutoDelay = 0.1
 local sheriffTargetPart = "HumanoidRootPart"
 
--- UI Sheriff
-Window:AddToggle(TabSheriff, "Enable Aimbot", "Aim ke target", false, function(v) sheriffAimbot = v end, "SheriffAimbot")
-Window:AddDropdown(TabSheriff, "Trigger", "Kapan aim", {"On Shoot","Always"}, false, "On Shoot", function(v) sheriffTrigger = v end, "SheriffTrigger")
-Window:AddDropdown(TabSheriff, "Target", "Siapa yang di-aim", {"Murderer Only","All Players","Innocent Only"}, false, "Murderer Only", function(v) sheriffTargetMode = v end, "SheriffTarget")
-Window:AddSlider(TabSheriff, "FOV Radius", "30-400", 30, 400, 150, function(v) sheriffFOV = v end, "SheriffFOV", true)
-Window:AddSlider(TabSheriff, "Max Distance", "50-500", 50, 500, 300, function(v) sheriffDistance = v end, "SheriffDist", true)
-Window:AddSlider(TabSheriff, "Smoothness", "1-10", 1, 10, 5, function(v) sheriffSmooth = v / 10 end, "SheriffSmooth", true)
-Window:AddToggle(TabSheriff, "Wall Check", "Tidak menembus tembok", true, function(v) sheriffWall = v end, "SheriffWall")
-Window:AddToggle(TabSheriff, "Prediction", "Aim ke depan target", false, function(v) sheriffPrediction = v end, "SheriffPred")
-Window:AddSlider(TabSheriff, "Pred Factor", "0-100", 0, 100, 20, function(v) sheriffPredFactor = v / 100 end, "SheriffPredFactor", true)
-Window:AddToggle(TabSheriff, "Auto Shoot", "Tembak otomatis", false, function(v) sheriffAutoShoot = v end, "SheriffAutoShoot")
-Window:AddSlider(TabSheriff, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) sheriffAutoDelay = v / 100 end, "SheriffAutoDelay", true)
-Window:AddDropdown(TabSheriff, "Target Part", "Bagian tubuh", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) sheriffTargetPart = v end, "SheriffPart")
+Window:AddToggle(TabSheriff, "Enable Aimbot", "Aim ke target", false, function(v) sheriffAimbot = v end)
+Window:AddDropdown(TabSheriff, "Trigger", "Kapan aim", {"On Shoot","Always"}, false, "On Shoot", function(v) sheriffTrigger = v end)
+Window:AddDropdown(TabSheriff, "Target", "Siapa yang di-aim", {"Murderer Only","All Players","Innocent Only"}, false, "Murderer Only", function(v) sheriffTargetMode = v end)
+Window:AddSlider(TabSheriff, "FOV Radius", "30-400", 30, 400, 150, function(v) sheriffFOV = v end)
+Window:AddSlider(TabSheriff, "Max Distance", "50-500", 50, 500, 300, function(v) sheriffDistance = v end)
+Window:AddSlider(TabSheriff, "Smoothness", "1-10", 1, 10, 5, function(v) sheriffSmooth = v / 10 end)
+Window:AddToggle(TabSheriff, "Wall Check", "Tidak menembus tembok", true, function(v) sheriffWall = v end)
+Window:AddToggle(TabSheriff, "Prediction", "Aim ke depan target", false, function(v) sheriffPrediction = v end)
+Window:AddSlider(TabSheriff, "Pred Factor", "0-100", 0, 100, 20, function(v) sheriffPredFactor = v / 100 end)
+Window:AddToggle(TabSheriff, "Auto Shoot", "Tembak otomatis", false, function(v) sheriffAutoShoot = v end)
+Window:AddSlider(TabSheriff, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) sheriffAutoDelay = v / 100 end)
+Window:AddDropdown(TabSheriff, "Target Part", "Bagian tubuh", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) sheriffTargetPart = v end)
 
 -- ============================================
 -- TAB MURDERER
@@ -133,9 +131,8 @@ Window:AddDropdown(TabSheriff, "Target Part", "Bagian tubuh", {"Head","HumanoidR
 local TabMurderer = Window:CreateTab("Murderer")
 Window:AddParagraph(TabMurderer, "Murderer Tools", "Aktif jika memegang Knife")
 
--- Variabel Murderer
 local murdererThrow = false
-local murdererThrowTarget = "All Players"  -- Sheriff Only / All Players / Innocent Only
+local murdererThrowTarget = "All Players"
 local murdererThrowDist = 300
 local murdererThrowCD = 2
 local murdererThrowPred = false
@@ -146,19 +143,17 @@ local murdererMelee = false
 local murdererMeleeRadius = 10
 local lastThrowTime = 0
 
--- UI Murderer
-Window:AddToggle(TabMurderer, "Auto Throw Knife", "Lempar pisau otomatis", false, function(v) murdererThrow = v end, "MurdererThrow")
-Window:AddDropdown(TabMurderer, "Throw Target", "Target lemparan", {"All Players","Sheriff Only","Innocent Only"}, false, "All Players", function(v) murdererThrowTarget = v end, "MurdererThrowTarget")
-Window:AddSlider(TabMurderer, "Max Throw Distance", "50-500", 50, 500, 300, function(v) murdererThrowDist = v end, "MurdererThrowDist", true)
-Window:AddSlider(TabMurderer, "Throw Cooldown", "0.5-10s", 0.5, 10, 2, function(v) murdererThrowCD = v end, "MurdererThrowCD", true)
-Window:AddToggle(TabMurderer, "Throw Prediction", "Lempar ke depan target", false, function(v) murdererThrowPred = v end, "MurdererThrowPred")
-Window:AddSlider(TabMurderer, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) murdererThrowPredFactor = v / 100 end, "MurdererThrowPredFactor", true)
-Window:AddToggle(TabMurderer, "Throw Wall Check", "Tidak lempar tembus tembok", true, function(v) murdererThrowWall = v end, "MurdererThrowWall")
-Window:AddToggle(TabMurderer, "Auto Equip Knife", "Equip pisau otomatis", false, function(v) murdererAutoEquip = v end, "MurdererAutoEquip")
-
+Window:AddToggle(TabMurderer, "Auto Throw Knife", "Lempar pisau otomatis", false, function(v) murdererThrow = v end)
+Window:AddDropdown(TabMurderer, "Throw Target", "Target lemparan", {"All Players","Sheriff Only","Innocent Only"}, false, "All Players", function(v) murdererThrowTarget = v end)
+Window:AddSlider(TabMurderer, "Max Throw Distance", "50-500", 50, 500, 300, function(v) murdererThrowDist = v end)
+Window:AddSlider(TabMurderer, "Throw Cooldown", "0.5-10s", 0.5, 10, 2, function(v) murdererThrowCD = v end)
+Window:AddToggle(TabMurderer, "Throw Prediction", "Lempar ke depan target", false, function(v) murdererThrowPred = v end)
+Window:AddSlider(TabMurderer, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) murdererThrowPredFactor = v / 100 end)
+Window:AddToggle(TabMurderer, "Throw Wall Check", "Tidak lempar tembus tembok", true, function(v) murdererThrowWall = v end)
+Window:AddToggle(TabMurderer, "Auto Equip Knife", "Equip pisau otomatis", false, function(v) murdererAutoEquip = v end)
 Window:AddDivider(TabMurderer, "Auto Melee Attack")
-Window:AddToggle(TabMurderer, "Auto Melee", "Serang musuh di dekat", false, function(v) murdererMelee = v end, "MurdererMelee")
-Window:AddSlider(TabMurderer, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) murdererMeleeRadius = v end, "MurdererMeleeRadius", true)
+Window:AddToggle(TabMurderer, "Auto Melee", "Serang musuh di dekat", false, function(v) murdererMelee = v end)
+Window:AddSlider(TabMurderer, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) murdererMeleeRadius = v end)
 
 -- ============================================
 -- TAB VISUAL (ESP + FOV)
@@ -171,10 +166,36 @@ if CoreGui:FindFirstChild("ESP_Holder") then CoreGui.ESP_Holder:Destroy() end
 local espEnabled = false
 local espData = {}
 
+local function updateESPVisual(player)
+    local data = espData[player]
+    if not data or not espEnabled then
+        if data and data.Highlight then data.Highlight.Enabled = false end
+        if data and data.Billboard then data.Billboard.Enabled = false end
+        return
+    end
+
+    local role = getRole(player)
+    local color = role == "Murderer" and Color3.new(1, 0, 0) or
+                  role == "Sheriff" and Color3.new(0, 0, 1) or
+                  Color3.new(0, 1, 0)
+    data.Highlight.FillColor = color
+    data.Highlight.OutlineColor = color
+    data.Highlight.Enabled = true
+    data.Billboard.Enabled = true
+end
+
+local function refreshESP()
+    for player, _ in pairs(espData) do
+        if player and player.Parent then
+            updateESPVisual(player)
+        end
+    end
+end
+
 Window:AddToggle(TabVisual, "Enable ESP", "Tampilkan nama + jarak + highlight", false, function(v)
     espEnabled = v
     refreshESP()
-end, "ESPToggle")
+end)
 
 -- FOV Circle
 local fovGui = Instance.new("ScreenGui")
@@ -199,11 +220,11 @@ fovCorner.CornerRadius = UDim.new(1, 0)
 
 Window:AddToggle(TabVisual, "Show FOV Circle", "Tampilkan lingkaran FOV", false, function(v)
     fovCircle.Visible = v
-end, "FovToggle")
+end)
 
 Window:AddSlider(TabVisual, "FOV Radius", "30-400", 30, 400, 150, function(v)
     fovCircle.Size = UDim2.new(0, v * 2, 0, v * 2)
-end, "FovRadius", true)
+end)
 
 -- ============================================
 -- ESP IMPLEMENTATION
@@ -268,33 +289,7 @@ local function createESP(player)
         Billboard = billboard
     }
 
-    updateESP(player)
-end
-
-local function updateESP(player)
-    local data = espData[player]
-    if not data or not espEnabled then
-        if data and data.Highlight then data.Highlight.Enabled = false end
-        if data and data.Billboard then data.Billboard.Enabled = false end
-        return
-    end
-
-    local role = getRole(player)
-    local color = role == "Murderer" and Color3.new(1, 0, 0) or
-                  role == "Sheriff" and Color3.new(0, 0, 1) or
-                  Color3.new(0, 1, 0)
-    data.Highlight.FillColor = color
-    data.Highlight.OutlineColor = color
-    data.Highlight.Enabled = true
-    data.Billboard.Enabled = true
-end
-
-local function refreshESP()
-    for player, _ in pairs(espData) do
-        if player and player.Parent then
-            updateESP(player)
-        end
-    end
+    updateESPVisual(player)
 end
 
 local function setupPlayer(player)
@@ -460,7 +455,6 @@ RunService.RenderStepped:Connect(function(dt)
 
     local myChar = LocalPlayer.Character
     if not myChar then return end
-    -- Auto-detect Sheriff: hanya aim jika pegang gun
     local hasGun = false
     for _, tool in ipairs(myChar:GetChildren()) do
         if tool:IsA("Tool") and tool:FindFirstChild("Fire") then
@@ -497,7 +491,6 @@ RunService.RenderStepped:Connect(function(dt)
         Camera.CFrame = targetCF
     end
 
-    -- Auto Shoot
     if sheriffAutoShoot and target then
         local center = Camera.ViewportSize / 2
         local pos, on = Camera:WorldToViewportPoint(target.Position)
@@ -587,13 +580,11 @@ task.spawn(function()
         local char = LocalPlayer.Character
         if not char then task.wait(0.5) continue end
 
-        -- Cek apakah pemain adalah Murderer
         if not isMurderer(LocalPlayer) then
             task.wait(0.5)
             continue
         end
 
-        -- Auto Equip Knife
         if murdererAutoEquip then
             local hasKnife = false
             for _, tool in ipairs(char:GetChildren()) do
@@ -608,7 +599,6 @@ task.spawn(function()
             end
         end
 
-        -- Auto Melee (prioritas lebih tinggi)
         if murdererMelee then
             local myRoot = char:FindFirstChild("HumanoidRootPart")
             if myRoot then
@@ -637,7 +627,6 @@ task.spawn(function()
             end
         end
 
-        -- Auto Throw
         if murdererThrow and (tick() - lastThrowTime) >= murdererThrowCD then
             local targets = getMurdererTargets()
             if #targets > 0 then
@@ -650,4 +639,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ W424HUB NO BUBBLE loaded – Sheriff & Murderer tabs ready!")
+print("✅ W424HUB loaded!")
