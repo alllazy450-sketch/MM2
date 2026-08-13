@@ -1,7 +1,7 @@
 -- ============================================
--- MURDER MYSTERY 2  – V1
+-- W424HUB – Target Panel (KAIRO UI)
 -- ============================================
-print("=== LOADING W424HUB ===")
+print("=== LOADING W424HUB TARGET PANEL ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -17,10 +17,11 @@ local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
+local TweenService = game:GetService("TweenService")
 
 -- WINDOW
 local Window = Kairo:CreateWindow({
-    Title = "MM2 W424 Hub",
+    Title = "W424HUB",
     Theme = "Ocean",
     Size = UDim2.fromOffset(500, 450),
     Center = true,
@@ -29,39 +30,164 @@ local Window = Kairo:CreateWindow({
     Badges = {"v3.0"},
     MinimizeKey = Enum.KeyCode.RightShift,
     MinimizeButton = true,
-    Config = { Enabled = true, Folder = "MM2OP_Config", AutoLoad = true }
+    Config = { Enabled = true, Folder = "W424HUB_Config", AutoLoad = true }
 })
 
 if not Window then return end
 
 Window:Notify({
-    Title = "MM2 OP Hub",
+    Title = "W424HUB",
     Description = "Loaded successfully!",
-    Content = "ESP Fix + Aimbot + Auto Tools",
+    Content = "Target Panel + ESP + Aimbot",
     Color = Color3.fromRGB(0, 200, 50),
     Delay = 3
 })
 
 -- ============================================
--- TAB: ESP (DIPERBAIKI)
+-- TARGET PANEL (POJOK KANAN ATAS)
 -- ============================================
-local TabESP = Window:CreateTab("ESP")
-Window:AddParagraph(TabESP, "ESP Billboard + Highlight", "Toggle below to show players with glow & distance")
+local targetPanel = Instance.new("ScreenGui")
+targetPanel.Name = "TargetPanel"
+targetPanel.Parent = CoreGui
+targetPanel.ResetOnSpawn = false
+targetPanel.IgnoreGuiInset = true
 
--- Hapus ESP lama jika ada
-if CoreGui:FindFirstChild("ESP_Holder") then CoreGui.ESP_Holder:Destroy() end
+local panelFrame = Instance.new("Frame")
+panelFrame.Size = UDim2.new(0, 130, 0, 110)
+panelFrame.Position = UDim2.new(1, -145, 0, 10)
+panelFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+panelFrame.BackgroundTransparency = 0.15
+panelFrame.BorderSizePixel = 0
+panelFrame.Visible = true
+panelFrame.Parent = targetPanel
+local panelCorner = Instance.new("UICorner", panelFrame)
+panelCorner.CornerRadius = UDim.new(0, 8)
+local panelStroke = Instance.new("UIStroke", panelFrame)
+panelStroke.Color = Color3.fromRGB(60, 60, 80)
+panelStroke.Thickness = 1
 
-local ESPFolder = Instance.new("Folder")
-ESPFolder.Name = "ESP_Holder"
-ESPFolder.Parent = CoreGui
+local panelTitle = Instance.new("TextLabel")
+panelTitle.Size = UDim2.new(1, 0, 0, 22)
+panelTitle.Position = UDim2.new(0, 0, 0, 2)
+panelTitle.BackgroundTransparency = 1
+panelTitle.Text = "🎯 TARGET"
+panelTitle.TextColor3 = Color3.fromRGB(200, 200, 255)
+panelTitle.TextSize = 13
+panelTitle.Font = Enum.Font.GothamBold
+panelTitle.Parent = panelFrame
 
-getgenv().AllEsp = false
-getgenv().MurderEsp = false
-getgenv().SheriffEsp = false
+getgenv().TargetList = {
+    Murderer = false,
+    Sheriff = false,
+    Innocent = false
+}
 
-local espData = {} -- player -> {Highlight, Billboard, NameLabel, DistanceLabel}
+local function updateTargetDisplay()
+    local status = ""
+    if getgenv().TargetList.Murderer then status = status .. "M " end
+    if getgenv().TargetList.Sheriff then status = status .. "S " end
+    if getgenv().TargetList.Innocent then status = status .. "I " end
+    if status == "" then status = "None" end
+    panelStatus.Text = status
+end
 
+-- Tombol M (Murderer) - MERAH
+local btnM = Instance.new("TextButton")
+btnM.Size = UDim2.new(0.3, -4, 0, 22)
+btnM.Position = UDim2.new(0.02, 0, 0.3, 0)
+btnM.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
+btnM.BackgroundTransparency = 0.3
+btnM.BorderSizePixel = 0
+btnM.Text = "M"
+btnM.TextColor3 = Color3.fromRGB(255, 100, 100)
+btnM.TextSize = 14
+btnM.Font = Enum.Font.GothamBold
+btnM.Parent = panelFrame
+local btnMCorner = Instance.new("UICorner", btnM)
+btnMCorner.CornerRadius = UDim.new(0, 4)
+btnM.MouseButton1Click:Connect(function()
+    getgenv().TargetList.Murderer = not getgenv().TargetList.Murderer
+    if getgenv().TargetList.Murderer then
+        btnM.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
+        btnM.BackgroundTransparency = 0.2
+    else
+        btnM.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
+        btnM.BackgroundTransparency = 0.3
+    end
+    updateTargetDisplay()
+end)
+
+-- Tombol S (Sheriff) - BIRU
+local btnS = Instance.new("TextButton")
+btnS.Size = UDim2.new(0.3, -4, 0, 22)
+btnS.Position = UDim2.new(0.35, 0, 0.3, 0)
+btnS.BackgroundColor3 = Color3.fromRGB(10, 10, 40)
+btnS.BackgroundTransparency = 0.3
+btnS.BorderSizePixel = 0
+btnS.Text = "S"
+btnS.TextColor3 = Color3.fromRGB(100, 100, 255)
+btnS.TextSize = 14
+btnS.Font = Enum.Font.GothamBold
+btnS.Parent = panelFrame
+local btnSCorner = Instance.new("UICorner", btnS)
+btnSCorner.CornerRadius = UDim.new(0, 4)
+btnS.MouseButton1Click:Connect(function()
+    getgenv().TargetList.Sheriff = not getgenv().TargetList.Sheriff
+    if getgenv().TargetList.Sheriff then
+        btnS.BackgroundColor3 = Color3.fromRGB(30, 30, 180)
+        btnS.BackgroundTransparency = 0.2
+    else
+        btnS.BackgroundColor3 = Color3.fromRGB(10, 10, 40)
+        btnS.BackgroundTransparency = 0.3
+    end
+    updateTargetDisplay()
+end)
+
+-- Tombol I (Innocent) - HIJAU
+local btnI = Instance.new("TextButton")
+btnI.Size = UDim2.new(0.3, -4, 0, 22)
+btnI.Position = UDim2.new(0.68, 0, 0.3, 0)
+btnI.BackgroundColor3 = Color3.fromRGB(10, 40, 10)
+btnI.BackgroundTransparency = 0.3
+btnI.BorderSizePixel = 0
+btnI.Text = "I"
+btnI.TextColor3 = Color3.fromRGB(100, 255, 100)
+btnI.TextSize = 14
+btnI.Font = Enum.Font.GothamBold
+btnI.Parent = panelFrame
+local btnICorner = Instance.new("UICorner", btnI)
+btnICorner.CornerRadius = UDim.new(0, 4)
+btnI.MouseButton1Click:Connect(function()
+    getgenv().TargetList.Innocent = not getgenv().TargetList.Innocent
+    if getgenv().TargetList.Innocent then
+        btnI.BackgroundColor3 = Color3.fromRGB(30, 180, 30)
+        btnI.BackgroundTransparency = 0.2
+    else
+        btnI.BackgroundColor3 = Color3.fromRGB(10, 40, 10)
+        btnI.BackgroundTransparency = 0.3
+    end
+    updateTargetDisplay()
+end)
+
+-- Status target
+local panelStatus = Instance.new("TextLabel")
+panelStatus.Size = UDim2.new(1, -10, 0, 20)
+panelStatus.Position = UDim2.new(0, 5, 0.7, 0)
+panelStatus.BackgroundTransparency = 1
+panelStatus.Text = "None"
+panelStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
+panelStatus.TextSize = 12
+panelStatus.Font = Enum.Font.Gotham
+panelStatus.TextXAlignment = Enum.TextXAlignment.Center
+panelStatus.Parent = panelFrame
+
+updateTargetDisplay()
+
+-- ============================================
+-- FUNGSI GET ROLE
+-- ============================================
 local function getRole(player)
+    if not player then return "Innocent" end
     local char = player.Character
     if not char then return "Innocent" end
     if char:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife") then
@@ -73,21 +199,68 @@ local function getRole(player)
     end
 end
 
+local function isTargetAllowed(player)
+    local role = getRole(player)
+    if role == "Murderer" and getgenv().TargetList.Murderer then return true end
+    if role == "Sheriff" and getgenv().TargetList.Sheriff then return true end
+    if role == "Innocent" and getgenv().TargetList.Innocent then return true end
+    return false
+end
+
+-- ============================================
+-- ESP (HIGHLIGHT + BILLBOARD)
+-- ============================================
+local TabESP = Window:CreateTab("ESP")
+Window:AddParagraph(TabESP, "ESP Settings", "Toggle ESP and FOV Circle")
+
+if CoreGui:FindFirstChild("ESP_Holder") then CoreGui.ESP_Holder:Destroy() end
+if CoreGui:FindFirstChild("W424_FOV") then CoreGui.W424_FOV:Destroy() end
+
+local espEnabled = false
+local espData = {}
+
+-- FOV CIRCLE
+local fovGui = Instance.new("ScreenGui")
+fovGui.Name = "W424_FOV"
+fovGui.Parent = CoreGui
+fovGui.ResetOnSpawn = false
+fovGui.IgnoreGuiInset = true
+
+local fovCircle = Instance.new("Frame")
+fovCircle.BackgroundTransparency = 1
+fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+fovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
+fovCircle.Size = UDim2.new(0, 200, 0, 200)
+fovCircle.Visible = false
+fovCircle.Parent = fovGui
+local fovStroke = Instance.new("UIStroke", fovCircle)
+fovStroke.Color = Color3.fromRGB(255, 255, 255)
+fovStroke.Thickness = 1.5
+fovStroke.Transparency = 0.5
+local fovCorner = Instance.new("UICorner", fovCircle)
+fovCorner.CornerRadius = UDim.new(1, 0)
+
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "ESP_Holder"
+ESPFolder.Parent = CoreGui
+
 local function createESP(player)
     if player == LocalPlayer then return end
-    if espData[player] then return end
+    if espData[player] then
+        if espData[player].Highlight then espData[player].Highlight:Destroy() end
+        if espData[player].Billboard then espData[player].Billboard:Destroy() end
+        espData[player] = nil
+    end
 
     local char = player.Character
     if not char then return end
 
-    -- Highlight (glow pada tubuh)
     local highlight = Instance.new("Highlight")
     highlight.Parent = char
     highlight.FillTransparency = 0.4
     highlight.OutlineTransparency = 0.2
     highlight.Enabled = false
 
-    -- Billboard untuk nama + jarak
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESP_Billboard"
     billboard.AlwaysOnTop = true
@@ -124,117 +297,53 @@ local function createESP(player)
 
     espData[player] = {
         Highlight = highlight,
-        Billboard = billboard,
-        NameLabel = nameLabel,
-        DistanceLabel = distanceLabel
+        Billboard = billboard
     }
 
-    updateESPForPlayer(player)
+    updateESP(player)
 end
 
-local function updateESPForPlayer(player)
+local function updateESP(player)
     local data = espData[player]
-    if not data then return end
+    if not data or not espEnabled then
+        if data and data.Highlight then data.Highlight.Enabled = false end
+        if data and data.Billboard then data.Billboard.Enabled = false end
+        return
+    end
+
     local role = getRole(player)
     local color = role == "Murderer" and Color3.new(1, 0, 0) or
                   role == "Sheriff" and Color3.new(0, 0, 1) or
                   Color3.new(0, 1, 0)
     data.Highlight.FillColor = color
     data.Highlight.OutlineColor = color
-
-    local visible = false
-    if getgenv().AllEsp then
-        visible = true
-    elseif getgenv().MurderEsp and role == "Murderer" then
-        visible = true
-    elseif getgenv().SheriffEsp and role == "Sheriff" then
-        visible = true
-    end
-    data.Highlight.Enabled = visible
-    data.Billboard.Enabled = visible
+    data.Highlight.Enabled = isTargetAllowed(player)
+    data.Billboard.Enabled = isTargetAllowed(player)
 end
 
-local function updateAllESP()
-    for player, data in pairs(espData) do
+local function refreshESP()
+    for player, _ in pairs(espData) do
         if player and player.Parent then
-            updateESPForPlayer(player)
-        else
-            -- cleanup jika player hilang
-            if data.Highlight then data.Highlight:Destroy() end
-            if data.Billboard then data.Billboard:Destroy() end
-            espData[player] = nil
+            updateESP(player)
         end
     end
 end
 
--- Update jarak setiap frame
-RunService.Heartbeat:Connect(function()
-    local myChar = LocalPlayer.Character
-    local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
-    for player, data in pairs(espData) do
-        if player and player.Parent and player.Character then
-            local head = player.Character:FindFirstChild("Head")
-            if head then
-                data.Billboard.Adornee = head
-                if myPos then
-                    local dist = (head.Position - myPos).Magnitude
-                    data.DistanceLabel.Text = string.format("%.0fm", dist)
-                end
-            end
-        end
+local function setupPlayer(player)
+    if player == LocalPlayer then return end
+    if player.Character then
+        createESP(player)
     end
-end)
+    player.CharacterAdded:Connect(function()
+        createESP(player)
+    end)
+end
 
--- Toggle ESP dengan logika mutually exclusive
-Window:AddToggle(TabESP, "All ESP", "Show every player (glow green)", false, function(v)
-    getgenv().AllEsp = v
-    if v then
-        getgenv().MurderEsp = false
-        getgenv().SheriffEsp = false
-    end
-    updateAllESP()
-end, "AllESPToggle")
-
-Window:AddToggle(TabESP, "Murder ESP", "Show murderer (glow red)", false, function(v)
-    getgenv().MurderEsp = v
-    if v then
-        getgenv().AllEsp = false
-        getgenv().SheriffEsp = false
-    end
-    updateAllESP()
-end, "MurderESPToggle")
-
-Window:AddToggle(TabESP, "Sheriff ESP", "Show sheriff (glow blue)", false, function(v)
-    getgenv().SheriffEsp = v
-    if v then
-        getgenv().AllEsp = false
-        getgenv().MurderEsp = false
-    end
-    updateAllESP()
-end, "SheriffESPToggle")
-
--- Buat ESP untuk player yang sudah ada dan yang baru
 for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        task.spawn(function()
-            if player.Character then
-                createESP(player)
-            end
-            player.CharacterAdded:Connect(function()
-                createESP(player)
-            end)
-        end)
-    end
+    setupPlayer(player)
 end
 
-Players.PlayerAdded:Connect(function(player)
-    if player ~= LocalPlayer then
-        player.CharacterAdded:Connect(function()
-            createESP(player)
-        end)
-    end
-end)
-
+Players.PlayerAdded:Connect(setupPlayer)
 Players.PlayerRemoving:Connect(function(player)
     local data = espData[player]
     if data then
@@ -244,15 +353,47 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
+-- Update jarak
+RunService.Heartbeat:Connect(function()
+    local myChar = LocalPlayer.Character
+    local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
+
+    for player, data in pairs(espData) do
+        if player and player.Parent and player.Character then
+            local head = player.Character:FindFirstChild("Head")
+            if head and myPos and data.Billboard then
+                local dist = (head.Position - myPos).Magnitude
+                local distLabel = data.Billboard:FindFirstChildWhichIsA("TextLabel")
+                if distLabel and distLabel.Text and distLabel.Text:match("m$") then
+                    distLabel.Text = string.format("%.0fm", dist)
+                end
+            end
+        end
+    end
+end)
+
+-- Toggle ESP
+Window:AddToggle(TabESP, "Enable ESP", "Show ESP based on target selection", false, function(v)
+    espEnabled = v
+    refreshESP()
+end, "ESPToggle")
+
+Window:AddToggle(TabESP, "Show FOV Circle", "Display aim FOV circle", false, function(v)
+    fovCircle.Visible = v
+end, "FovCircleToggle")
+
+Window:AddSlider(TabESP, "FOV Radius", "30-400", 30, 400, 150, function(v)
+    fovCircle.Size = UDim2.new(0, v * 2, 0, v * 2)
+end, "FOVRadius", true)
+
 -- ============================================
--- TAB: AIM (SAMA SEPERTI SEBELUMNYA)
+-- TAB: AIM
 -- ============================================
 local TabAim = Window:CreateTab("Aim")
-Window:AddParagraph(TabAim, "Sheriff Aimbot", "For Sheriff (Gun)")
+Window:AddParagraph(TabAim, "Aimbot & Auto Tools", "Targets based on panel selection")
 
 local aimbotEnabled = false
 local aimTrigger = "On Shoot"
-local targetMode = "Murderer Only"
 local fovRadius = 150
 local maxDistance = 300
 local smoothness = 0.5
@@ -262,18 +403,12 @@ local predictionFactor = 0.2
 local autoShootEnabled = false
 local autoShootDelay = 0.1
 local targetPartName = "HumanoidRootPart"
-local fovCircleVisible = false
 
-Window:AddToggle(TabAim, "Aimbot", "Enable aimbot (Sheriff only)", false, function(v) aimbotEnabled = v end, "AimbotToggle")
+Window:AddToggle(TabAim, "Aimbot", "Enable aimbot (auto-detects Sheriff)", false, function(v) aimbotEnabled = v end, "AimbotToggle")
 Window:AddDropdown(TabAim, "Trigger", "When to aim", {"On Shoot","Always"}, false, "On Shoot", function(v) aimTrigger = v end, "AimTriggerDrop")
-Window:AddDropdown(TabAim, "Target Mode", "Who to target", {"Murderer Only","All Players"}, false, "Murderer Only", function(v) targetMode = v end, "TargetModeDrop")
-Window:AddToggle(TabAim, "FOV Circle", "Show aim FOV", false, function(v)
-    fovCircleVisible = v
-    if fovCircle then fovCircle.Visible = v end
-end, "FOVCircleToggle")
 Window:AddSlider(TabAim, "FOV Radius", "30-400", 30, 400, 150, function(v)
     fovRadius = v
-    if fovCircle then fovCircle.Size = UDim2.new(0, fovRadius * 2, 0, fovRadius * 2) end
+    fovCircle.Size = UDim2.new(0, v * 2, 0, v * 2)
 end, "FOVRadius", true)
 Window:AddSlider(TabAim, "Max Distance", "50-500", 50, 500, 300, function(v) maxDistance = v end, "MaxDist", true)
 Window:AddSlider(TabAim, "Smoothness", "1-10", 1, 10, 5, function(v) smoothness = v / 10 end, "Smoothness", true)
@@ -283,24 +418,6 @@ Window:AddSlider(TabAim, "Pred Factor", "0-100", 0, 100, 20, function(v) predict
 Window:AddToggle(TabAim, "Auto Shoot", "Shoot automatically when on target", false, function(v) autoShootEnabled = v end, "AutoShootToggle")
 Window:AddSlider(TabAim, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) autoShootDelay = v / 100 end, "AutoShootDelay", true)
 Window:AddDropdown(TabAim, "Target Part", "Body part", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) targetPartName = v end, "TargetPartDrop")
-
--- FOV Circle
-local fovGui = Instance.new("ScreenGui")
-fovGui.Name = "MM2_FOV"
-fovGui.Parent = CoreGui
-fovGui.ResetOnSpawn = false
-local fovCircle = Instance.new("Frame")
-fovCircle.BackgroundTransparency = 1
-fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-fovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-fovCircle.Size = UDim2.new(0, fovRadius * 2, 0, fovRadius * 2)
-fovCircle.Visible = false
-fovCircle.Parent = fovGui
-local stroke = Instance.new("UIStroke", fovCircle)
-stroke.Color = Color3.fromRGB(255, 255, 255)
-stroke.Thickness = 1.5
-local corner = Instance.new("UICorner", fovCircle)
-corner.CornerRadius = UDim.new(1, 0)
 
 -- Murderer Tools
 Window:AddDivider(TabAim, "Murderer Tools")
@@ -329,7 +446,7 @@ Window:AddToggle(TabAim, "Auto Melee", "Attack nearby enemies with knife", false
 Window:AddSlider(TabAim, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) meleeRadius = v end, "MeleeRadius", true)
 
 -- ============================================
--- FUNGSI UTAMA (SAMA)
+-- FUNGSI UTAMA
 -- ============================================
 local function isMurderer(player)
     if not player then return false end
@@ -395,8 +512,7 @@ local function getTargets()
         local hum = char:FindFirstChildOfClass("Humanoid")
         if not hum or hum.Health <= 0 then continue end
 
-        local isMur = isMurderer(player)
-        if targetMode == "Murderer Only" and not isMur then continue end
+        if not isTargetAllowed(player) then continue end
 
         local part = char:FindFirstChild(targetPartName) or char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
         if not part then continue end
@@ -418,14 +534,11 @@ local function getTargets()
             Player = player,
             Part = part,
             Position = targetPos,
-            Distance = dist,
-            IsMurderer = isMur
+            Distance = dist
         })
     end
 
     table.sort(targets, function(a, b)
-        if a.IsMurderer and not b.IsMurderer then return true end
-        if not a.IsMurderer and b.IsMurderer then return false end
         return a.Distance < b.Distance
     end)
     return targets
@@ -512,6 +625,8 @@ local function getThrowTargets()
         if not pChar then continue end
         local hum = pChar:FindFirstChildOfClass("Humanoid")
         if not hum or hum.Health <= 0 then continue end
+
+        if not isTargetAllowed(player) then continue end
 
         if throwTargetMode == "Sheriff Only" and not isSheriff(player) then continue end
 
@@ -602,6 +717,7 @@ task.spawn(function()
                 local closestDist = meleeRadius
                 for _, player in ipairs(Players:GetPlayers()) do
                     if player == LocalPlayer then continue end
+                    if not isTargetAllowed(player) then continue end
                     local pChar = player.Character
                     if not pChar then continue end
                     local hum = pChar:FindFirstChildOfClass("Humanoid")
@@ -633,4 +749,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ MM2 W424HUB")
+print("✅ W424HUB Target Panel load.")
