@@ -1,7 +1,7 @@
 -- ============================================
--- MURDER MYSTERY 2 - V1
+-- MURDER MYSTERY 2  – V1
 -- ============================================
-print("=== LOADING MM2 OP FINAL ===")
+print("=== LOADING MM2 OP FULL ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -713,7 +713,6 @@ local function doMeleeAttack(targetChar)
         if meleeRemote and meleeRemote:IsA("RemoteEvent") then
             meleeRemote:FireServer()
         else
-            -- Jika tidak ada remote, gunakan remote yang umum
             local generalRemote = ReplicatedStorage:FindFirstChild("Melee") or ReplicatedStorage:FindFirstChild("Attack")
             if generalRemote then
                 generalRemote:FireServer()
@@ -781,7 +780,7 @@ task.spawn(function()
                 end
                 if closestTarget then
                     doMeleeAttack(closestTarget)
-                    task.wait(0.3) -- jeda antar melee
+                    task.wait(0.3)
                 end
             end
         end
@@ -875,4 +874,4 @@ Window:AddButton(TabMisc, "Get Every Gun/Knife", "Attempt to unlock all weapons 
     end
 end, "GetWeaponsBtn")
 
-print("✅ MM2 OP Hub FINAL loaded")
+print("✅ MM2 W424 Hub FULL loaded")
