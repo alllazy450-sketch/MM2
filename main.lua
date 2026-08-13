@@ -1,7 +1,7 @@
 -- ============================================
--- MURDER MYSTERY 2 OP – FINAL (NO LABEL)
+-- MURDER MYSTERY 2 OP – FINAL STABLE (KAIRO UI)
 -- ============================================
-print("=== LOADING MM2 OP FINAL ===")
+print("=== LOADING MM2 OP STABLE ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -43,13 +43,11 @@ Window:Notify({
 })
 
 -- ============================================
--- TAB: ROLES & ESP (Tanpa Label Dinamis)
+-- TAB: ESP
 -- ============================================
-local TabRoles = Window:CreateTab("Roles & ESP")
+local TabESP = Window:CreateTab("ESP")
+Window:AddParagraph(TabESP, "ESP Billboard", "Toggle below to show players")
 
-Window:AddParagraph(TabRoles, "ESP Billboard", "Toggle below to show players")
-
--- ESP Folder
 local ESPFolder = Instance.new("Folder")
 ESPFolder.Name = "ESP_Holder"
 ESPFolder.Parent = CoreGui
@@ -117,7 +115,7 @@ Players.PlayerRemoving:Connect(function(player)
     if bill then bill:Destroy() end
 end)
 
-Window:AddToggle(TabRoles, "All ESP", "Show every player (green)", false, function(v)
+Window:AddToggle(TabESP, "All ESP", "Show every player (green)", false, function(v)
     getgenv().AllEsp = v
     if v then
         getgenv().MurderEsp = false
@@ -125,14 +123,14 @@ Window:AddToggle(TabRoles, "All ESP", "Show every player (green)", false, functi
     end
 end, "AllESPToggle")
 
-Window:AddToggle(TabRoles, "Murder ESP", "Show murderer (red)", false, function(v)
+Window:AddToggle(TabESP, "Murder ESP", "Show murderer (red)", false, function(v)
     getgenv().MurderEsp = v
     if v then
         getgenv().AllEsp = false
     end
 end, "MurderESPToggle")
 
-Window:AddToggle(TabRoles, "Sheriff ESP", "Show sheriff (blue)", false, function(v)
+Window:AddToggle(TabESP, "Sheriff ESP", "Show sheriff (blue)", false, function(v)
     getgenv().SheriffEsp = v
     if v then
         getgenv().AllEsp = false
@@ -179,7 +177,7 @@ Window:AddToggle(TabAim, "Auto Shoot", "Shoot automatically when on target", fal
 Window:AddSlider(TabAim, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) autoShootDelay = v / 100 end, "AutoShootDelay", true)
 Window:AddDropdown(TabAim, "Target Part", "Body part", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) targetPartName = v end, "TargetPartDrop")
 
--- FOV Circle GUI
+-- FOV Circle
 local fovGui = Instance.new("ScreenGui")
 fovGui.Name = "MM2_FOV"
 fovGui.Parent = CoreGui
@@ -528,4 +526,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ MM2 OP Hub FINAL loaded – No AddLabel, no buttons, only ESP + Aimbot + Auto Tools.")
+print("✅ MM2 OP Hub FINAL STABLE loaded – No Labels, only ESP + Aimbot + Auto Tools.")
