@@ -1,7 +1,7 @@
 -- ============================================
--- MURDER MYSTERY 2  – V1
+-- MURDER MYSTERY 2 OP – V1
 -- ============================================
-print("=== LOADING MM2 W424HUB ===")
+print("=== LOADING MM2 ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -22,7 +22,7 @@ local Camera = workspace.CurrentCamera
 -- WINDOW KAIRO
 -- ============================================
 local Window = Kairo:CreateWindow({
-    Title = "MM2 OP Hub",
+    Title = "MM2 W424 Hub",
     Theme = "Ocean",
     Size = UDim2.fromOffset(500, 450),
     Center = true,
@@ -53,7 +53,9 @@ Window:Notify({
 local TabRoles = Window:CreateTab("Roles & ESP")
 
 Window:AddParagraph(TabRoles, "Role Exposure", "Chat roles")
-Window:AddButton(TabRoles, "Chat Expose Roles", function()
+
+-- BUTTON PAKAI 5 PARAMETER
+Window:AddButton(TabRoles, "Chat Expose Roles", "Say who has knife/gun in chat", function()
     local allPlayers = Players:GetPlayers()
     for _, player in ipairs(allPlayers) do
         local backpack = player:FindFirstChild("Backpack")
@@ -76,7 +78,7 @@ Window:AddButton(TabRoles, "Chat Expose Roles", function()
         Color = Color3.fromRGB(0, 200, 255),
         Delay = 3
     })
-end)
+end, "ExposeRolesBtn")
 
 -- Gun Drop Status
 Window:AddDivider(TabRoles, "Gun Drop Status")
@@ -644,14 +646,12 @@ task.spawn(function()
 end)
 
 -- ============================================
--- TAB: MISC (Tanpa AddButton yang bermasalah)
+-- TAB: MISC
 -- ============================================
 local TabMisc = Window:CreateTab("Misc")
 
--- Ganti tombol dengan paragraph yang bisa di-klik? Tapi Kairo tidak punya clickable paragraph.
--- Kita tetap pakai AddButton tapi dengan 2 parameter saja (Tab, Title, Callback)
-Window:AddParagraph(TabMisc, "Emotes", "Click button below to unlock all free emotes")
-Window:AddButton(TabMisc, "Get Every Emote", function()
+Window:AddParagraph(TabMisc, "Emotes", "Unlock all free emotes")
+Window:AddButton(TabMisc, "Get Every Emote", "Add all free emotes", function()
     local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
     local Emotes = PlayerGui:WaitForChild("MainGUI"):WaitForChild("Game"):FindFirstChild("Emotes")
     if Emotes then
@@ -681,11 +681,11 @@ Window:AddButton(TabMisc, "Get Every Emote", function()
             Delay = 3
         })
     end
-end)
+end, "EmoteBtn")
 
 Window:AddDivider(TabMisc, "Weapons")
 Window:AddParagraph(TabMisc, "Get Every Gun/Knife", "Client-side unlock (may need respawn)")
-Window:AddButton(TabMisc, "Unlock All Weapons", function()
+Window:AddButton(TabMisc, "Unlock All Weapons", "Unlock all guns and knives", function()
     local success, result = pcall(function()
         local Database = getrenv()._G.Database
         local PlayerData = getrenv()._G.PlayerData
@@ -710,6 +710,6 @@ Window:AddButton(TabMisc, "Unlock All Weapons", function()
     else
         Window:Notify({ Title = "Weapons", Description = "Failed: " .. tostring(result), Color = Color3.fromRGB(255,0,0), Delay = 5 })
     end
-end)
+end, "WeaponBtn")
 
 print("✅ MM2 OP Hub LOADED")
