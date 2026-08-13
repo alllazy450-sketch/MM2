@@ -17,6 +17,7 @@ local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 -- ============================================
 -- WINDOW KAIRO
@@ -24,11 +25,11 @@ local Camera = workspace.CurrentCamera
 local Window = Kairo:CreateWindow({
     Title = "W424HUB",
     Theme = "Ocean",
-    Size = UDim2.fromOffset(530, 330),
+    Size = UDim2.fromOffset(530, 430),
     Center = true,
     Draggable = true,
     Resize = false,
-    Badges = {"v3.0"},
+    Badges = {"v1.0"},
     MinimizeKey = Enum.KeyCode.RightShift,
     MinimizeButton = true,
     Config = { Enabled = true, Folder = "W424HUB_Config", AutoLoad = true }
@@ -45,7 +46,7 @@ Window:Notify({
 })
 
 -- ============================================
--- FUNGSI GET ROLE (AKURAT - PAKAI METODE EUGENE)
+-- FUNGSI GET ROLE (AKURAT)
 -- ============================================
 local function getRole(player)
     if not player or not player.Character then return "Innocent" end
@@ -114,7 +115,7 @@ local function hasClearLOS(fromPos, toPos, myChar, targetChar)
 end
 
 -- ============================================
--- TAB SHERIFF (AIMBOT + AUTO SHOOT)
+-- TAB SHERIFF
 -- ============================================
 local TabSheriff = Window:CreateTab("Sheriff")
 Window:AddParagraph(TabSheriff, "Sheriff Aimbot", "Aktif jika memegang Gun")
@@ -131,6 +132,7 @@ local sheriffPredFactor = 0.2
 local sheriffAutoShoot = false
 local sheriffAutoDelay = 0.1
 local sheriffTargetPart = "HumanoidRootPart"
+local lastAutoShootTime = 0
 
 Window:AddToggle(TabSheriff, "Enable Aimbot", "Aim ke target", false, function(v) sheriffAimbot = v end)
 Window:AddDropdown(TabSheriff, "Trigger", "Kapan aim", {"On Shoot","Always"}, false, "On Shoot", function(v) sheriffTrigger = v end)
@@ -336,7 +338,24 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Update jarak
+-- Update jarak & role secara periodik (fix ESP role change)
+task.spawn(function()
+    local lastRoles = {}
+    while true do
+        for player, data in pairs(espData) do
+            if player and player.Parent then
+                local newRole = getRole(player)
+                if lastRoles[player] ~= newRole then
+                    lastRoles[player] = newRole
+                    updateESPVisual(player)
+                end
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- Update jarak secara real-time
 RunService.Heartbeat:Connect(function()
     local myChar = LocalPlayer.Character
     local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
@@ -463,7 +482,7 @@ local function getMurdererTargets()
 end
 
 -- ============================================
--- AIMBOT SHERIFF LOOP (DENGAN AUTO SHOOT)
+-- AIMBOT SHERIFF LOOP + AUTO SHOOT FIX
 -- ============================================
 local function isShooting()
     return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or
@@ -478,11 +497,13 @@ RunService.RenderStepped:Connect(function(dt)
 
     -- Cek apakah memegang Gun (Sheriff)
     local hasGun = false
+    local gunTool = nil
     for _, tool in ipairs(myChar:GetChildren()) do
         if tool:IsA("Tool") then
             local name = tool.Name:lower()
             if name:find("gun") or name:find("revolver") or name:find("pistol") or name:find("sheriff") then
                 hasGun = true
+                gunTool = tool
                 break
             end
         end
@@ -516,26 +537,45 @@ RunService.RenderStepped:Connect(function(dt)
         Camera.CFrame = targetCF
     end
 
-    -- AUTO SHOOT (diperbaiki)
+    -- AUTO SHOOT (FIX)
     if sheriffAutoShoot and target then
         local center = Camera.ViewportSize / 2
         local pos, on = Camera:WorldToViewportPoint(target.Position)
-        if on and (Vector2.new(pos.X, pos.Y) - center).Magnitude < 15 then
-            pcall(function()
-                local origin = CharacterRayOrigin(myChar)
-                if origin and target.Part then
-                    local hitPart = target.Part
-                    local targetPos2 = hitPart.Position
-                    -- Kirim remote tembak
-                    ReplicatedStorage.Remotes.ShootGun:FireServer(origin, targetPos2, hitPart, targetPos2)
-                    -- Mainkan suara tembakan
-                    local tool = myChar:FindFirstChildOfClass("Tool")
-                    if tool and tool:FindFirstChild("Fire") then
-                        tool.Fire:Play()
+        if on then
+            local crosshairDist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+            -- Ambang batas lebih longgar (30 pixel)
+            if crosshairDist < 30 and (tick() - lastAutoShootTime) > sheriffAutoDelay then
+                lastAutoShootTime = tick()
+                pcall(function()
+                    local origin = CharacterRayOrigin(myChar)
+                    if origin and target.Part then
+                        local hitPart = target.Part
+                        local targetPos2 = hitPart.Position
+
+                        -- Kirim remote tembak
+                        local shootRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ShootGun")
+                        if shootRemote then
+                            shootRemote:FireServer(origin, targetPos2, hitPart, targetPos2)
+                        else
+                            -- Fallback: coba remote langsung
+                            local remote = ReplicatedStorage:FindFirstChild("ShootGun")
+                            if remote then
+                                remote:FireServer(origin, targetPos2, hitPart, targetPos2)
+                            end
+                        end
+
+                        -- Mainkan suara tembakan
+                        if gunTool and gunTool:FindFirstChild("Fire") then
+                            gunTool.Fire:Play()
+                        end
+
+                        -- Simulasi klik mouse sebagai alternatif (jika remote gagal)
+                        -- VirtualInputManager:SendMouseButtonEvent(Enum.UserInputType.MouseButton1, 0, true, game, 0)
+                        -- task.wait(0.05)
+                        -- VirtualInputManager:SendMouseButtonEvent(Enum.UserInputType.MouseButton1, 0, false, game, 0)
                     end
-                    task.wait(sheriffAutoDelay)
-                end
-            end)
+                end)
+            end
         end
     end
 end)
@@ -571,7 +611,14 @@ local function throwKnifeAt(targetChar, targetPos)
     if not origin then return end
 
     local direction = (targetPos - origin).Unit
-    ReplicatedStorage.Remotes.ThrowStart:FireServer(origin, direction)
+    local throwRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ThrowStart")
+    if throwRemote then
+        throwRemote:FireServer(origin, direction)
+    else
+        local remote = ReplicatedStorage:FindFirstChild("ThrowStart")
+        if remote then remote:FireServer(origin, direction) end
+    end
+
     local knifeModule = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("KnifeProjectileController")
     if knifeModule then
         pcall(function()
@@ -581,12 +628,23 @@ local function throwKnifeAt(targetChar, targetPos)
                 Direction = direction,
                 Origin = origin
             }, function(raycastResult)
-                ReplicatedStorage.Remotes.ThrowHit:FireServer(raycastResult and raycastResult.Instance,
-                    raycastResult and raycastResult.Position)
+                local hitRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ThrowHit")
+                if hitRemote then
+                    hitRemote:FireServer(raycastResult and raycastResult.Instance, raycastResult and raycastResult.Position)
+                else
+                    local remote = ReplicatedStorage:FindFirstChild("ThrowHit")
+                    if remote then remote:FireServer(raycastResult and raycastResult.Instance, raycastResult and raycastResult.Position) end
+                end
             end)
         end)
     else
-        ReplicatedStorage.Remotes.ThrowHit:FireServer(nil, targetPos)
+        local hitRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ThrowHit")
+        if hitRemote then
+            hitRemote:FireServer(nil, targetPos)
+        else
+            local remote = ReplicatedStorage:FindFirstChild("ThrowHit")
+            if remote then remote:FireServer(nil, targetPos) end
+        end
     end
     lastThrowTime = tick()
 end
