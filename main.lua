@@ -1,7 +1,7 @@
 -- ============================================
--- MURDER MYSTERY 2 OP – V1
+-- MURDER MYSTERY 2  – V1
 -- ============================================
-print("=== LOADING MM2 OP ===")
+print("=== LOADING MM2 W424HUB ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -42,65 +42,10 @@ end
 Window:Notify({
     Title = "MM2 OP Hub",
     Description = "Loaded successfully!",
-    Content = "Aimbot, Auto Throw, Auto Melee",
+    Content = "Aimbot, Auto Throw, Auto Melee, ESP",
     Color = Color3.fromRGB(0, 200, 50),
     Delay = 3
 })
-
--- ============================================
--- TAB: TRADING
--- ============================================
-local TabTrade = Window:CreateTab("Trading")
-Window:AddParagraph(TabTrade, "Trade Stuff", "Force trade with anyone")
-
-local playerNameTextbox = ""
-Window:AddInput(TabTrade, "Player Name", "Enter player name...", "", function(v)
-    playerNameTextbox = v
-end, "TradeInput")
-
--- ADD BUTTON WITHOUT FLAG (4 params)
-Window:AddButton(TabTrade, "Force Trade", "Send trade request & accept", function()
-    if playerNameTextbox and playerNameTextbox ~= "" then
-        local player = Players:FindFirstChild(playerNameTextbox)
-        if player then
-            local args = { [1] = player }
-            local success, err = pcall(function()
-                ReplicatedStorage:WaitForChild("Trade"):WaitForChild("SendRequest"):InvokeServer(unpack(args))
-                task.wait(0.5)
-                ReplicatedStorage:WaitForChild("Trade"):WaitForChild("AcceptRequest"):FireServer()
-            end)
-            if success then
-                Window:Notify({
-                    Title = "Trade System",
-                    Description = "Force Traded Player: " .. playerNameTextbox,
-                    Color = Color3.fromRGB(0, 255, 0),
-                    Delay = 3
-                })
-            else
-                Window:Notify({
-                    Title = "Trade System",
-                    Description = "Error: " .. err,
-                    Color = Color3.fromRGB(255, 0, 0),
-                    Delay = 3
-                })
-            end
-        else
-            Window:Notify({
-                Title = "Trade System",
-                Description = "Player not found.",
-                Color = Color3.fromRGB(255, 255, 0),
-                Delay = 3
-            })
-        end
-    else
-        Window:Notify({
-            Title = "Trade System",
-            Description = "Please enter a valid player name.",
-            Color = Color3.fromRGB(255, 255, 0),
-            Delay = 3
-        })
-    end
-end)
 
 -- ============================================
 -- TAB: ROLES & ESP
@@ -108,7 +53,7 @@ end)
 local TabRoles = Window:CreateTab("Roles & ESP")
 
 Window:AddParagraph(TabRoles, "Role Exposure", "Chat roles")
-Window:AddButton(TabRoles, "Chat Expose Roles", "Say who has knife/gun in chat", function()
+Window:AddButton(TabRoles, "Chat Expose Roles", function()
     local allPlayers = Players:GetPlayers()
     for _, player in ipairs(allPlayers) do
         local backpack = player:FindFirstChild("Backpack")
@@ -394,7 +339,7 @@ Window:AddToggle(TabAim, "Auto Melee", "Attack nearby enemies with knife", false
 Window:AddSlider(TabAim, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) meleeRadius = v end, "MeleeRadius", true)
 
 -- ============================================
--- FUNGSI UTAMA
+-- FUNGSI UTAMA (SAMA SEPERTI SEBELUMNYA)
 -- ============================================
 local function isMurderer(player)
     if not player then return false end
@@ -699,12 +644,14 @@ task.spawn(function()
 end)
 
 -- ============================================
--- TAB: MISC
+-- TAB: MISC (Tanpa AddButton yang bermasalah)
 -- ============================================
 local TabMisc = Window:CreateTab("Misc")
 
-Window:AddParagraph(TabMisc, "Emotes", "Unlock all free emotes")
-Window:AddButton(TabMisc, "Get Every Emote", "Add all free emotes", function()
+-- Ganti tombol dengan paragraph yang bisa di-klik? Tapi Kairo tidak punya clickable paragraph.
+-- Kita tetap pakai AddButton tapi dengan 2 parameter saja (Tab, Title, Callback)
+Window:AddParagraph(TabMisc, "Emotes", "Click button below to unlock all free emotes")
+Window:AddButton(TabMisc, "Get Every Emote", function()
     local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
     local Emotes = PlayerGui:WaitForChild("MainGUI"):WaitForChild("Game"):FindFirstChild("Emotes")
     if Emotes then
@@ -737,7 +684,8 @@ Window:AddButton(TabMisc, "Get Every Emote", "Add all free emotes", function()
 end)
 
 Window:AddDivider(TabMisc, "Weapons")
-Window:AddButton(TabMisc, "Get Every Gun/Knife", "Attempt to unlock all weapons (client-side)", function()
+Window:AddParagraph(TabMisc, "Get Every Gun/Knife", "Client-side unlock (may need respawn)")
+Window:AddButton(TabMisc, "Unlock All Weapons", function()
     local success, result = pcall(function()
         local Database = getrenv()._G.Database
         local PlayerData = getrenv()._G.PlayerData
@@ -764,4 +712,4 @@ Window:AddButton(TabMisc, "Get Every Gun/Knife", "Attempt to unlock all weapons 
     end
 end)
 
-print("✅ MM2 OP Hub LOADED!")
+print("✅ MM2 OP Hub LOADED")
