@@ -1,10 +1,13 @@
 -- ============================================
--- W424HUB – FINAL FIX (Sheriff & Murderer)
+-- W424HUB – FINAL (ESP AUTO UPDATE + AUTO SHOOT FIX)
 -- ============================================
-print("=== LOADING W424HUB FIX ===")
+print("=== LOADING W424HUB FINAL ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
-if not Kairo then warn("❌ Kairo failed to load!") return end
+if not Kairo then
+    warn("❌ Kairo failed to load!")
+    return
+end
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -14,6 +17,7 @@ local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 -- ============================================
 -- WINDOW KAIRO
@@ -25,58 +29,56 @@ local Window = Kairo:CreateWindow({
     Center = true,
     Draggable = true,
     Resize = false,
-    Badges = {"v3.1"},
+    Badges = {"v3.0"},
     MinimizeKey = Enum.KeyCode.RightShift,
     MinimizeButton = true,
     Config = { Enabled = true, Folder = "W424HUB_Config", AutoLoad = true }
 })
 
+if not Window then return end
+
 Window:Notify({
     Title = "W424HUB",
-    Description = "Loaded!",
-    Content = "Sheriff & Murderer Tools",
-    Color = Color3.fromRGB(0,200,50),
+    Description = "Loaded successfully!",
+    Content = "Sheriff & Murderer Tabs",
+    Color = Color3.fromRGB(0, 200, 50),
     Delay = 3
 })
 
 -- ============================================
--- FUNGSI GET ROLE (PAKAI WEAPON DETECTION + ATTRIBUTE)
+-- FUNGSI GET ROLE (AKURAT)
 -- ============================================
 local function getRole(player)
     if not player or not player.Character then return "Innocent" end
 
-    -- Cek attribute (jika ada)
-    local roleAttr = player:GetAttribute("Role")
-    if roleAttr then
-        if roleAttr == "Murderer" or roleAttr == "Sheriff" then return roleAttr end
-    end
-
-    -- Cek tool
     local hasKnife = false
     local hasGun = false
 
-    local function checkTool(tool)
-        if not tool or not tool:IsA("Tool") then return end
-        local name = tool.Name:lower()
-        if name:find("knife") or name:find("murderer") or name:find("blade") or name:find("throw") then
+    -- Cek di backpack
+    local backpack = player:FindFirstChild("Backpack")
+    if backpack then
+        for _, tool in ipairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") then
+                local name = tool.Name:lower()
+                if name:find("knife") or name:find("murderer") or name:find("blade") then
+                    hasKnife = true
+                end
+                if name:find("gun") or name:find("revolver") or name:find("sheriff") or name:find("pistol") then
+                    hasGun = true
+                end
+            end
+        end
+    end
+
+    -- Cek tool yang sedang dipegang
+    local charTool = player.Character:FindFirstChildOfClass("Tool")
+    if charTool then
+        local name = charTool.Name:lower()
+        if name:find("knife") or name:find("murderer") or name:find("blade") then
             hasKnife = true
         end
         if name:find("gun") or name:find("revolver") or name:find("sheriff") or name:find("pistol") then
             hasGun = true
-        end
-    end
-
-    -- Cek di Character
-    local char = player.Character
-    for _, tool in ipairs(char:GetChildren()) do
-        checkTool(tool)
-    end
-
-    -- Cek di Backpack
-    local backpack = player:FindFirstChild("Backpack")
-    if backpack then
-        for _, tool in ipairs(backpack:GetChildren()) do
-            checkTool(tool)
         end
     end
 
@@ -85,12 +87,14 @@ local function getRole(player)
     return "Innocent"
 end
 
-local function isMurderer(player) return getRole(player) == "Murderer" end
-local function isSheriff(player) return getRole(player) == "Sheriff" end
+local function isMurderer(player)
+    return getRole(player) == "Murderer"
+end
 
--- ============================================
--- HELPERS
--- ============================================
+local function isSheriff(player)
+    return getRole(player) == "Sheriff"
+end
+
 local function CharacterRayOrigin(char)
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
@@ -111,182 +115,40 @@ local function hasClearLOS(fromPos, toPos, myChar, targetChar)
 end
 
 -- ============================================
--- WEAPONSERVICE HOOK (ALTERNATIF AIM)
--- ============================================
-local WeaponService = nil
-local oldGetMouseTargetCFrame = nil
-
-pcall(function()
-    WeaponService = require(ReplicatedStorage:FindFirstChild("ClientServices"):FindFirstChild("WeaponService"))
-    if WeaponService then
-        oldGetMouseTargetCFrame = WeaponService.GetMouseTargetCFrame
-    end
-end)
-
-local aimbotEnabled = false
-local aimbotTargetMode = "Murderer Only"
-local aimbotFOV = 150
-local aimbotDistance = 300
-local aimbotSmooth = 0.5
-local aimbotWall = true
-local aimbotPrediction = false
-local aimbotPredFactor = 0.2
-local aimbotAutoShoot = false
-local aimbotAutoDelay = 0.1
-local aimbotTargetPart = "HumanoidRootPart"
-local lastAutoShootTime = 0
-
--- Fungsi target filter
-local function isTargetAllowed(player)
-    local role = getRole(player)
-    if aimbotTargetMode == "Murderer Only" and role == "Murderer" then return true end
-    if aimbotTargetMode == "Innocent Only" and role == "Innocent" then return true end
-    if aimbotTargetMode == "All Players" then return true end
-    return false
-end
-
-local function getAimbotTarget()
-    local myChar = LocalPlayer.Character
-    if not myChar then return nil end
-    local myRoot = myChar:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return nil end
-    local myPos = myRoot.Position
-    local bestTarget = nil
-    local bestScore = math.huge
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then continue end
-        local char = player.Character
-        if not char then continue end
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hum or hum.Health <= 0 then continue end
-
-        if not isTargetAllowed(player) then continue end
-
-        local part = char:FindFirstChild(aimbotTargetPart) or char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
-        if not part then continue end
-
-        local targetPos = part.Position
-        if aimbotPrediction then
-            local vel = part.Velocity or Vector3.new()
-            targetPos = targetPos + (vel * aimbotPredFactor)
-        end
-
-        local dist = (targetPos - myPos).Magnitude
-        if dist > aimbotDistance then continue end
-
-        if aimbotWall and not hasClearLOS(myPos, targetPos, myChar, char) then
-            continue
-        end
-
-        local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
-        if not onScreen then continue end
-        local center = Camera.ViewportSize / 2
-        local screenDist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-        if screenDist > aimbotFOV then continue end
-
-        -- Score: jarak layar + jarak dunia
-        local score = screenDist + dist * 0.1
-        if score < bestScore then
-            bestScore = score
-            bestTarget = {
-                Player = player,
-                Part = part,
-                Position = targetPos,
-                Distance = dist,
-                ScreenDist = screenDist
-            }
-        end
-    end
-    return bestTarget
-end
-
--- ============================================
--- HOOK WEAPONSERVICE (JALUR UTAMA AIM)
--- ============================================
-local function HookWeaponService()
-    if not WeaponService then return end
-    if oldGetMouseTargetCFrame then
-        WeaponService.GetMouseTargetCFrame = function(self)
-            if not aimbotEnabled then
-                return oldGetMouseTargetCFrame(self)
-            end
-            local target = getAimbotTarget()
-            if target then
-                local targetPos = target.Position
-                local finalPos = targetPos + Vector3.new(0, 0.5, 0)
-                return CFrame.new(finalPos)
-            end
-            return oldGetMouseTargetCFrame(self)
-        end
-    end
-end
-
--- Panggil hook
-pcall(HookWeaponService)
-
--- ============================================
--- UI SHERIFF (AIMBOT)
+-- TAB SHERIFF
 -- ============================================
 local TabSheriff = Window:CreateTab("Sheriff")
 Window:AddParagraph(TabSheriff, "Sheriff Aimbot", "Aktif jika memegang Gun")
 
-Window:AddToggle(TabSheriff, "Enable Aimbot", "Aim ke target via WeaponService", false, function(v) aimbotEnabled = v end)
-Window:AddDropdown(TabSheriff, "Target", "Siapa yang di-aim", {"Murderer Only","All Players","Innocent Only"}, false, "Murderer Only", function(v) aimbotTargetMode = v end)
-Window:AddSlider(TabSheriff, "FOV Radius", "30-400", 30, 400, 150, function(v) aimbotFOV = v end)
-Window:AddSlider(TabSheriff, "Max Distance", "50-500", 50, 500, 300, function(v) aimbotDistance = v end)
-Window:AddSlider(TabSheriff, "Smoothness", "1-10", 1, 10, 5, function(v) aimbotSmooth = v / 10 end)
-Window:AddToggle(TabSheriff, "Wall Check", "Tidak menembus tembok", true, function(v) aimbotWall = v end)
-Window:AddToggle(TabSheriff, "Prediction", "Aim ke depan target", false, function(v) aimbotPrediction = v end)
-Window:AddSlider(TabSheriff, "Pred Factor", "0-100", 0, 100, 20, function(v) aimbotPredFactor = v / 100 end)
-Window:AddToggle(TabSheriff, "Auto Shoot", "Tembak otomatis (menggunakan remote)", false, function(v) aimbotAutoShoot = v end)
-Window:AddSlider(TabSheriff, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) aimbotAutoDelay = v / 100 end)
-Window:AddDropdown(TabSheriff, "Target Part", "Bagian tubuh", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) aimbotTargetPart = v end)
+local sheriffAimbot = false
+local sheriffTrigger = "On Shoot"
+local sheriffTargetMode = "Murderer Only"
+local sheriffFOV = 150
+local sheriffDistance = 300
+local sheriffSmooth = 0.5
+local sheriffWall = true
+local sheriffPrediction = false
+local sheriffPredFactor = 0.2
+local sheriffAutoShoot = false
+local sheriffAutoDelay = 0.1
+local sheriffTargetPart = "HumanoidRootPart"
+local lastAutoShootTime = 0
+
+Window:AddToggle(TabSheriff, "Enable Aimbot", "Aim ke target", false, function(v) sheriffAimbot = v end)
+Window:AddDropdown(TabSheriff, "Trigger", "Kapan aim", {"On Shoot","Always"}, false, "On Shoot", function(v) sheriffTrigger = v end)
+Window:AddDropdown(TabSheriff, "Target", "Siapa yang di-aim", {"Murderer Only","All Players","Innocent Only"}, false, "Murderer Only", function(v) sheriffTargetMode = v end)
+Window:AddSlider(TabSheriff, "FOV Radius", "30-400", 30, 400, 150, function(v) sheriffFOV = v end)
+Window:AddSlider(TabSheriff, "Max Distance", "50-500", 50, 500, 300, function(v) sheriffDistance = v end)
+Window:AddSlider(TabSheriff, "Smoothness", "1-10", 1, 10, 5, function(v) sheriffSmooth = v / 10 end)
+Window:AddToggle(TabSheriff, "Wall Check", "Tidak menembus tembok", true, function(v) sheriffWall = v end)
+Window:AddToggle(TabSheriff, "Prediction", "Aim ke depan target", false, function(v) sheriffPrediction = v end)
+Window:AddSlider(TabSheriff, "Pred Factor", "0-100", 0, 100, 20, function(v) sheriffPredFactor = v / 100 end)
+Window:AddToggle(TabSheriff, "Auto Shoot", "Tembak otomatis", false, function(v) sheriffAutoShoot = v end)
+Window:AddSlider(TabSheriff, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) sheriffAutoDelay = v / 100 end)
+Window:AddDropdown(TabSheriff, "Target Part", "Bagian tubuh", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) sheriffTargetPart = v end)
 
 -- ============================================
--- AUTO SHOOT LOOP (MENGGUNAKAN REMOTE)
--- ============================================
-local shootRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ShootGun")
-if not shootRemote then
-    shootRemote = ReplicatedStorage:FindFirstChild("ShootGun")
-end
-if not shootRemote then
-    warn("ShootGun remote not found! Auto shoot may not work.")
-end
-
-RunService.RenderStepped:Connect(function(dt)
-    if not aimbotEnabled or not aimbotAutoShoot then return end
-    if not shootRemote then return end
-
-    local myChar = LocalPlayer.Character
-    if not myChar then return end
-    local gun = myChar:FindFirstChildOfClass("Tool")
-    if not gun or not (gun.Name:lower():find("gun") or gun.Name:lower():find("revolver") or gun.Name:lower():find("pistol")) then
-        return
-    end
-
-    local target = getAimbotTarget()
-    if not target then return end
-
-    local center = Camera.ViewportSize / 2
-    local screenPos, onScreen = Camera:WorldToViewportPoint(target.Position)
-    if not onScreen then return end
-    local crosshairDist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-    if crosshairDist > 30 then return end
-
-    if (tick() - lastAutoShootTime) >= aimbotAutoDelay then
-        lastAutoShootTime = tick()
-        local origin = CharacterRayOrigin(myChar)
-        if origin then
-            pcall(function()
-                shootRemote:FireServer(origin, target.Position, target.Part, target.Position)
-            end)
-        end
-    end
-end)
-
--- ============================================
--- MURDERER TAB (SAMA SEPERTI SEBELUMNYA, TETAP ADA)
+-- TAB MURDERER
 -- ============================================
 local TabMurderer = Window:CreateTab("Murderer")
 Window:AddParagraph(TabMurderer, "Murderer Tools", "Aktif jika memegang Knife")
@@ -316,11 +178,12 @@ Window:AddToggle(TabMurderer, "Auto Melee", "Serang musuh di dekat", false, func
 Window:AddSlider(TabMurderer, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) murdererMeleeRadius = v end)
 
 -- ============================================
--- ESP (SAMA SEPERTI SEBELUMNYA)
+-- TAB VISUAL (ESP + FOV)
 -- ============================================
 local TabVisual = Window:CreateTab("Visual")
 Window:AddParagraph(TabVisual, "ESP & FOV", "Toggle visual")
 
+-- ESP
 if CoreGui:FindFirstChild("ESP_Holder") then CoreGui.ESP_Holder:Destroy() end
 local espEnabled = false
 local espData = {}
@@ -332,6 +195,7 @@ local function updateESPVisual(player)
         if data and data.Billboard then data.Billboard.Enabled = false end
         return
     end
+
     local role = getRole(player)
     local color = role == "Murderer" and Color3.new(1, 0, 0) or
                   role == "Sheriff" and Color3.new(0, 0, 1) or
@@ -344,7 +208,9 @@ end
 
 local function refreshESP()
     for player, _ in pairs(espData) do
-        if player and player.Parent then updateESPVisual(player) end
+        if player and player.Parent then
+            updateESPVisual(player)
+        end
     end
 end
 
@@ -383,7 +249,7 @@ Window:AddSlider(TabVisual, "FOV Radius", "30-400", 30, 400, 150, function(v)
 end)
 
 -- ============================================
--- ESP IMPLEMENTASI
+-- ESP IMPLEMENTATION
 -- ============================================
 local ESPFolder = Instance.new("Folder")
 ESPFolder.Name = "ESP_Holder"
@@ -396,6 +262,7 @@ local function createESP(player)
         if espData[player].Billboard then espData[player].Billboard:Destroy() end
         espData[player] = nil
     end
+
     local char = player.Character
     if not char then return end
 
@@ -439,17 +306,28 @@ local function createESP(player)
     distanceLabel.TextSize = 12
     distanceLabel.Parent = billboard
 
-    espData[player] = { Highlight = highlight, Billboard = billboard }
+    espData[player] = {
+        Highlight = highlight,
+        Billboard = billboard
+    }
+
     updateESPVisual(player)
 end
 
 local function setupPlayer(player)
     if player == LocalPlayer then return end
-    if player.Character then createESP(player) end
-    player.CharacterAdded:Connect(function() createESP(player) end)
+    if player.Character then
+        createESP(player)
+    end
+    player.CharacterAdded:Connect(function()
+        createESP(player)
+    end)
 end
 
-for _, player in ipairs(Players:GetPlayers()) do setupPlayer(player) end
+for _, player in ipairs(Players:GetPlayers()) do
+    setupPlayer(player)
+end
+
 Players.PlayerAdded:Connect(setupPlayer)
 Players.PlayerRemoving:Connect(function(player)
     local data = espData[player]
@@ -460,6 +338,7 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
+-- Update jarak & role secara periodik (fix ESP role change)
 task.spawn(function()
     local lastRoles = {}
     while true do
@@ -476,9 +355,11 @@ task.spawn(function()
     end
 end)
 
+-- Update jarak secara real-time
 RunService.Heartbeat:Connect(function()
     local myChar = LocalPlayer.Character
     local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
+
     for player, data in pairs(espData) do
         if player and player.Parent and player.Character then
             local head = player.Character:FindFirstChild("Head")
@@ -494,7 +375,213 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- ============================================
--- MURDERER LOGIC (SAMA)
+-- FUNGSI TARGET FILTER UNTUK SHERIFF
+-- ============================================
+local function isSheriffTargetAllowed(player)
+    local role = getRole(player)
+    if sheriffTargetMode == "Murderer Only" and role == "Murderer" then return true end
+    if sheriffTargetMode == "Innocent Only" and role == "Innocent" then return true end
+    if sheriffTargetMode == "All Players" then return true end
+    return false
+end
+
+local function getSheriffTargets()
+    local targets = {}
+    local myChar = LocalPlayer.Character
+    if not myChar then return targets end
+    local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return targets end
+    local myPos = myRoot.Position
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        local char = player.Character
+        if not char then continue end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum or hum.Health <= 0 then continue end
+
+        if not isSheriffTargetAllowed(player) then continue end
+
+        local part = char:FindFirstChild(sheriffTargetPart) or char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
+        if not part then continue end
+
+        local targetPos = part.Position
+        if sheriffPrediction then
+            local vel = part.Velocity or Vector3.new()
+            targetPos = targetPos + (vel * sheriffPredFactor)
+        end
+
+        local dist = (targetPos - myPos).Magnitude
+        if dist > sheriffDistance then continue end
+
+        if sheriffWall and not hasClearLOS(myPos, targetPos, myChar, char) then
+            continue
+        end
+
+        table.insert(targets, {
+            Player = player,
+            Part = part,
+            Position = targetPos,
+            Distance = dist
+        })
+    end
+
+    table.sort(targets, function(a, b) return a.Distance < b.Distance end)
+    return targets
+end
+
+-- ============================================
+-- FUNGSI TARGET FILTER UNTUK MURDERER
+-- ============================================
+local function isMurdererTargetAllowed(player)
+    local role = getRole(player)
+    if murdererThrowTarget == "Sheriff Only" and role == "Sheriff" then return true end
+    if murdererThrowTarget == "Innocent Only" and role == "Innocent" then return true end
+    if murdererThrowTarget == "All Players" then return true end
+    return false
+end
+
+local function getMurdererTargets()
+    local targets = {}
+    local char = LocalPlayer.Character
+    if not char then return targets end
+    local myRoot = char:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return targets end
+    local myPos = myRoot.Position
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        local pChar = player.Character
+        if not pChar then continue end
+        local hum = pChar:FindFirstChildOfClass("Humanoid")
+        if not hum or hum.Health <= 0 then continue end
+
+        if not isMurdererTargetAllowed(player) then continue end
+
+        local part = pChar:FindFirstChild("HumanoidRootPart") or pChar:FindFirstChild("Head")
+        if not part then continue end
+
+        local targetPos = part.Position
+        if murdererThrowPred then
+            local vel = part.Velocity or Vector3.new()
+            targetPos = targetPos + (vel * murdererThrowPredFactor)
+        end
+
+        local dist = (targetPos - myPos).Magnitude
+        if dist > murdererThrowDist then continue end
+
+        if murdererThrowWall and not hasClearLOS(myPos, targetPos, char, pChar) then
+            continue
+        end
+
+        table.insert(targets, { Character = pChar, Position = targetPos, Distance = dist })
+    end
+
+    table.sort(targets, function(a, b) return a.Distance < b.Distance end)
+    return targets
+end
+
+-- ============================================
+-- AIMBOT SHERIFF LOOP + AUTO SHOOT FIX
+-- ============================================
+local function isShooting()
+    return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or
+           UserInputService:IsMouseButtonPressed(Enum.UserInputType.Touch)
+end
+
+RunService.RenderStepped:Connect(function(dt)
+    if not sheriffAimbot then return end
+
+    local myChar = LocalPlayer.Character
+    if not myChar then return end
+
+    -- Cek apakah memegang Gun (Sheriff)
+    local hasGun = false
+    local gunTool = nil
+    for _, tool in ipairs(myChar:GetChildren()) do
+        if tool:IsA("Tool") then
+            local name = tool.Name:lower()
+            if name:find("gun") or name:find("revolver") or name:find("pistol") or name:find("sheriff") then
+                hasGun = true
+                gunTool = tool
+                break
+            end
+        end
+    end
+    if not hasGun then return end
+
+    local canAim = (sheriffTrigger == "Always") or (sheriffTrigger == "On Shoot" and isShooting())
+    if not canAim then return end
+
+    local targets = getSheriffTargets()
+    if #targets == 0 then return end
+
+    local target = targets[1]
+    local targetPos = target.Position
+    local currentCF = Camera.CFrame
+    local targetCF = CFrame.new(currentCF.Position, targetPos)
+
+    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
+    if onScreen then
+        local center = Camera.ViewportSize / 2
+        local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+        if dist > sheriffFOV then return end
+    else
+        return
+    end
+
+    if sheriffSmooth < 1 then
+        local lerpFactor = 1 - math.exp(-sheriffSmooth * dt * 5)
+        Camera.CFrame = currentCF:Lerp(targetCF, lerpFactor)
+    else
+        Camera.CFrame = targetCF
+    end
+
+    -- AUTO SHOOT (FIX)
+    if sheriffAutoShoot and target then
+        local center = Camera.ViewportSize / 2
+        local pos, on = Camera:WorldToViewportPoint(target.Position)
+        if on then
+            local crosshairDist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+            -- Ambang batas lebih longgar (30 pixel)
+            if crosshairDist < 30 and (tick() - lastAutoShootTime) > sheriffAutoDelay then
+                lastAutoShootTime = tick()
+                pcall(function()
+                    local origin = CharacterRayOrigin(myChar)
+                    if origin and target.Part then
+                        local hitPart = target.Part
+                        local targetPos2 = hitPart.Position
+
+                        -- Kirim remote tembak
+                        local shootRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ShootGun")
+                        if shootRemote then
+                            shootRemote:FireServer(origin, targetPos2, hitPart, targetPos2)
+                        else
+                            -- Fallback: coba remote langsung
+                            local remote = ReplicatedStorage:FindFirstChild("ShootGun")
+                            if remote then
+                                remote:FireServer(origin, targetPos2, hitPart, targetPos2)
+                            end
+                        end
+
+                        -- Mainkan suara tembakan
+                        if gunTool and gunTool:FindFirstChild("Fire") then
+                            gunTool.Fire:Play()
+                        end
+
+                        -- Simulasi klik mouse sebagai alternatif (jika remote gagal)
+                        -- VirtualInputManager:SendMouseButtonEvent(Enum.UserInputType.MouseButton1, 0, true, game, 0)
+                        -- task.wait(0.05)
+                        -- VirtualInputManager:SendMouseButtonEvent(Enum.UserInputType.MouseButton1, 0, false, game, 0)
+                    end
+                end)
+            end
+        end
+    end
+end)
+
+-- ============================================
+-- MURDERER AUTO THROW + AUTO MELEE LOOP
 -- ============================================
 local function equipKnife()
     local char = LocalPlayer.Character
@@ -517,8 +604,12 @@ local function throwKnifeAt(targetChar, targetPos)
     if not char then return end
     local tool = char:FindFirstChildOfClass("Tool")
     if not tool or not (tool.Name:lower():find("knife") or tool.Name:lower():find("blade")) then return end
+    local rightHandle = tool:FindFirstChild("RightHandle")
+    if not rightHandle then return end
+
     local origin = CharacterRayOrigin(char)
     if not origin then return end
+
     local direction = (targetPos - origin).Unit
     local throwRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ThrowStart")
     if throwRemote then
@@ -527,6 +618,34 @@ local function throwKnifeAt(targetChar, targetPos)
         local remote = ReplicatedStorage:FindFirstChild("ThrowStart")
         if remote then remote:FireServer(origin, direction) end
     end
+
+    local knifeModule = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("KnifeProjectileController")
+    if knifeModule then
+        pcall(function()
+            require(knifeModule)({
+                Speed = tool:GetAttribute("ThrowSpeed") or 50,
+                KnifeProjectile = rightHandle:Clone(),
+                Direction = direction,
+                Origin = origin
+            }, function(raycastResult)
+                local hitRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ThrowHit")
+                if hitRemote then
+                    hitRemote:FireServer(raycastResult and raycastResult.Instance, raycastResult and raycastResult.Position)
+                else
+                    local remote = ReplicatedStorage:FindFirstChild("ThrowHit")
+                    if remote then remote:FireServer(raycastResult and raycastResult.Instance, raycastResult and raycastResult.Position) end
+                end
+            end)
+        end)
+    else
+        local hitRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ThrowHit")
+        if hitRemote then
+            hitRemote:FireServer(nil, targetPos)
+        else
+            local remote = ReplicatedStorage:FindFirstChild("ThrowHit")
+            if remote then remote:FireServer(nil, targetPos) end
+        end
+    end
     lastThrowTime = tick()
 end
 
@@ -534,7 +653,8 @@ local function doMeleeAttack()
     local char = LocalPlayer.Character
     if not char then return end
     local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Melee")
-    if remote then remote:FireServer()
+    if remote then
+        remote:FireServer()
     else
         local general = ReplicatedStorage:FindFirstChild("Melee") or ReplicatedStorage:FindFirstChild("Attack")
         if general then general:FireServer() end
@@ -543,77 +663,145 @@ end
 
 task.spawn(function()
     while true do
-        if LocalPlayer.Character and isMurderer(LocalPlayer) then
-            if murdererAutoEquip then
-                local hasKnife = false
-                for _, tool in ipairs(LocalPlayer.Character:GetChildren()) do
-                    if tool:IsA("Tool") and (tool.Name:lower():find("knife") or tool.Name:lower():find("blade")) then
-                        hasKnife = true
-                        break
-                    end
-                end
-                if not hasKnife then equipKnife()
-            end
+        local char = LocalPlayer.Character
+        if not char then task.wait(0.5) continue end
 
-            if murdererMelee then
-                local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if myRoot then
-                    local myPos = myRoot.Position
-                    for _, player in ipairs(Players:GetPlayers()) do
-                        if player == LocalPlayer then continue end
-                        local role = getRole(player)
-                        if murdererThrowTarget == "Sheriff Only" and role ~= "Sheriff" then continue end
-                        if murdererThrowTarget == "Innocent Only" and role ~= "Innocent" then continue end
-                        local pChar = player.Character
-                        if not pChar then continue end
-                        local hum = pChar:FindFirstChildOfClass("Humanoid")
-                        if not hum or hum.Health <= 0 then continue end
-                        local targetRoot = pChar:FindFirstChild("HumanoidRootPart")
-                        if not targetRoot then continue end
-                        local dist = (targetRoot.Position - myPos).Magnitude
-                        if dist < murdererMeleeRadius and hasClearLOS(myPos, targetRoot.Position, LocalPlayer.Character, pChar) then
-                            doMeleeAttack()
-                            task.wait(0.3)
-                        end
-                    end
+        if not isMurderer(LocalPlayer) then
+            task.wait(0.5)
+            continue
+        end
+
+        if murdererAutoEquip then
+            local hasKnife = false
+            for _, tool in ipairs(char:GetChildren()) do
+                if tool:IsA("Tool") and (tool.Name:lower():find("knife") or tool.Name:lower():find("blade")) then
+                    hasKnife = true
+                    break
                 end
             end
+            if not hasKnife then
+                equipKnife()
+                task.wait(0.2)
+            end
+        end
 
-            if murdererThrow and (tick() - lastThrowTime) >= murdererThrowCD then
-                -- Cari target terdekat
-                local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if myRoot then
-                    local myPos = myRoot.Position
-                    local best = nil
-                    local bestDist = murdererThrowDist
-                    for _, player in ipairs(Players:GetPlayers()) do
-                        if player == LocalPlayer then continue end
-                        local role = getRole(player)
-                        if murdererThrowTarget == "Sheriff Only" and role ~= "Sheriff" then continue end
-                        if murdererThrowTarget == "Innocent Only" and role ~= "Innocent" then continue end
-                        local pChar = player.Character
-                        if not pChar then continue end
-                        local hum = pChar:FindFirstChildOfClass("Humanoid")
-                        if not hum or hum.Health <= 0 then continue end
-                        local targetRoot = pChar:FindFirstChild("HumanoidRootPart")
-                        if not targetRoot then continue end
-                        local dist = (targetRoot.Position - myPos).Magnitude
-                        if dist < bestDist and hasClearLOS(myPos, targetRoot.Position, LocalPlayer.Character, pChar) then
-                            bestDist = dist
-                            best = pChar
-                        end
+        if murdererMelee then
+            local myRoot = char:FindFirstChild("HumanoidRootPart")
+            if myRoot then
+                local myPos = myRoot.Position
+                local closest = nil
+                local closestDist = murdererMeleeRadius
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player == LocalPlayer then continue end
+                    if not isMurdererTargetAllowed(player) then continue end
+                    local pChar = player.Character
+                    if not pChar then continue end
+                    local hum = pChar:FindFirstChildOfClass("Humanoid")
+                    if not hum or hum.Health <= 0 then continue end
+                    local targetRoot = pChar:FindFirstChild("HumanoidRootPart")
+                    if not targetRoot then continue end
+                    local dist = (targetRoot.Position - myPos).Magnitude
+                    if dist < closestDist and hasClearLOS(myPos, targetRoot.Position, char, pChar) then
+                        closestDist = dist
+                        closest = pChar
                     end
-                    if best then
-                        local targetPos = best:FindFirstChild("HumanoidRootPart") and best.HumanoidRootPart.Position
-                        if targetPos then
-                            throwKnifeAt(best, targetPos)
+                end
+                if closest then
+                    doMeleeAttack()
+                    task.wait(0.3)
+                end
+            end
+        end
+
+        if murdererThrow and (tick() - lastThrowTime) >= murdererThrowCD then
+            local targets = getMurdererTargets()
+            if #targets > 0 then
+                local target = targets[1]
+                throwKnifeAt(target.Character, target.Position)
+            end
+        end
+
+        task.wait(0.1)
+    end
+end)
+
+-- ============================================
+-- TAMBAHAN DARI SOURCE FILE (WeaponService Hook)
+-- ============================================
+pcall(function()
+    local players = game:GetService("Players")
+    local lp = players.LocalPlayer
+    local camera = workspace.CurrentCamera
+    local uis = game:GetService("UserInputService")
+    local WeaponService = require(game:GetService("ReplicatedStorage").ClientServices.WeaponService)
+
+    local function hasTool(player, name)
+        for _, loc in ipairs({player.Character, player.Backpack}) do
+            if loc then
+                for _, item in ipairs(loc:GetChildren()) do
+                    if item.Name == name and item:IsA("Tool") then
+                        return true
+                    end
+                end
+            end
+        end
+        return false
+    end
+
+    local function getLocalTool()
+        for _, loc in ipairs({lp.Character, lp.Backpack}) do
+            if loc then
+                for _, item in ipairs(loc:GetChildren()) do
+                    if item:IsA("Tool") and (item.Name == "Gun" or item.Name == "Knife") then
+                        return item.Name
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
+    local function isValidTarget(player, localTool)
+        if localTool == "Gun" then
+            return hasTool(player, "Knife")
+        elseif localTool == "Knife" then
+            return hasTool(player, "Gun") or not hasTool(player, "Knife")
+        end
+        return false
+    end
+
+    local function getTarget()
+        local localTool = getLocalTool()
+        if not localTool then return nil end
+        local mousePos = uis:GetMouseLocation()
+        local closest, dist = nil, math.huge
+        for _, p in ipairs(players:GetPlayers()) do
+            if p ~= lp and p.Character and isValidTarget(p, localTool) then
+                local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                local hum = p.Character:FindFirstChild("Humanoid")
+                if hrp and hum and hum.Health > 0 then
+                    local screenPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+                    if onScreen then
+                        local d = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                        if d < dist then
+                            dist = d
+                            closest = hrp
                         end
                     end
                 end
             end
         end
-        task.wait(0.1)
+        return closest
+    end
+
+    local oldGet = WeaponService.GetMouseTargetCFrame
+    WeaponService.GetMouseTargetCFrame = function(self)
+        local hrp = getTarget()
+        if hrp then
+            return CFrame.new(hrp.Position + Vector3.new(0, 0.5, 0))
+        end
+        return oldGet(self)
     end
 end)
 
-print("✅ W424HUB FINAL FIX loaded – aimbot menggunakan WeaponService hook + auto shoot remote.")
+print("✅ W424HUB FINAL loaded!")
