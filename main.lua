@@ -1,7 +1,7 @@
 -- ============================================
--- MURDER MYSTERY 2 OP – FINAL STABLE (KAIRO UI)
+-- MURDER MYSTERY 2  – V1
 -- ============================================
-print("=== LOADING MM2 OP STABLE ===")
+print("=== LOADING W424HUB ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -20,7 +20,7 @@ local Camera = workspace.CurrentCamera
 
 -- WINDOW
 local Window = Kairo:CreateWindow({
-    Title = "MM2 OP Hub",
+    Title = "MM2 W424 Hub",
     Theme = "Ocean",
     Size = UDim2.fromOffset(500, 450),
     Center = true,
@@ -37,16 +37,19 @@ if not Window then return end
 Window:Notify({
     Title = "MM2 OP Hub",
     Description = "Loaded successfully!",
-    Content = "ESP + Aimbot + Auto Tools",
+    Content = "ESP Fix + Aimbot + Auto Tools",
     Color = Color3.fromRGB(0, 200, 50),
     Delay = 3
 })
 
 -- ============================================
--- TAB: ESP
+-- TAB: ESP (DIPERBAIKI)
 -- ============================================
 local TabESP = Window:CreateTab("ESP")
-Window:AddParagraph(TabESP, "ESP Billboard", "Toggle below to show players")
+Window:AddParagraph(TabESP, "ESP Billboard + Highlight", "Toggle below to show players with glow & distance")
+
+-- Hapus ESP lama jika ada
+if CoreGui:FindFirstChild("ESP_Holder") then CoreGui.ESP_Holder:Destroy() end
 
 local ESPFolder = Instance.new("Folder")
 ESPFolder.Name = "ESP_Holder"
@@ -56,89 +59,193 @@ getgenv().AllEsp = false
 getgenv().MurderEsp = false
 getgenv().SheriffEsp = false
 
-local function AddBillboard(player)
-    local Billboard = Instance.new("BillboardGui")
-    Billboard.Name = player.Name .. "_ESP"
-    Billboard.AlwaysOnTop = true
-    Billboard.Size = UDim2.new(0, 200, 0, 50)
-    Billboard.ExtentsOffset = Vector3.new(0, 3, 0)
-    Billboard.Enabled = false
-    Billboard.Parent = ESPFolder
+local espData = {} -- player -> {Highlight, Billboard, NameLabel, DistanceLabel}
 
-    local TextLabel = Instance.new("TextLabel")
-    TextLabel.TextSize = 20
-    TextLabel.Text = player.Name
-    TextLabel.Font = Enum.Font.FredokaOne
-    TextLabel.BackgroundTransparency = 1
-    TextLabel.Size = UDim2.new(1, 0, 1, 0)
-    TextLabel.TextStrokeTransparency = 0
-    TextLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-    TextLabel.Parent = Billboard
+local function getRole(player)
+    local char = player.Character
+    if not char then return "Innocent" end
+    if char:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife") then
+        return "Murderer"
+    elseif char:FindFirstChild("Gun") or player.Backpack:FindFirstChild("Gun") then
+        return "Sheriff"
+    else
+        return "Innocent"
+    end
+end
 
-    local con
-    con = RunService.Heartbeat:Connect(function()
-        if not player.Parent then
-            con:Disconnect()
-            Billboard:Destroy()
-            return
+local function createESP(player)
+    if player == LocalPlayer then return end
+    if espData[player] then return end
+
+    local char = player.Character
+    if not char then return end
+
+    -- Highlight (glow pada tubuh)
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = char
+    highlight.FillTransparency = 0.4
+    highlight.OutlineTransparency = 0.2
+    highlight.Enabled = false
+
+    -- Billboard untuk nama + jarak
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESP_Billboard"
+    billboard.AlwaysOnTop = true
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.ExtentsOffset = Vector3.new(0, 2.5, 0)
+    billboard.Enabled = false
+    local head = char:FindFirstChild("Head")
+    billboard.Parent = head or char
+    if head then billboard.Adornee = head end
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    nameLabel.Position = UDim2.new(0, 0, 0, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = player.Name
+    nameLabel.TextColor3 = Color3.new(1, 1, 1)
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 14
+    nameLabel.Parent = billboard
+
+    local distanceLabel = Instance.new("TextLabel")
+    distanceLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    distanceLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    distanceLabel.BackgroundTransparency = 1
+    distanceLabel.Text = "0m"
+    distanceLabel.TextColor3 = Color3.new(1, 1, 1)
+    distanceLabel.TextStrokeTransparency = 0
+    distanceLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    distanceLabel.Font = Enum.Font.Gotham
+    distanceLabel.TextSize = 12
+    distanceLabel.Parent = billboard
+
+    espData[player] = {
+        Highlight = highlight,
+        Billboard = billboard,
+        NameLabel = nameLabel,
+        DistanceLabel = distanceLabel
+    }
+
+    updateESPForPlayer(player)
+end
+
+local function updateESPForPlayer(player)
+    local data = espData[player]
+    if not data then return end
+    local role = getRole(player)
+    local color = role == "Murderer" and Color3.new(1, 0, 0) or
+                  role == "Sheriff" and Color3.new(0, 0, 1) or
+                  Color3.new(0, 1, 0)
+    data.Highlight.FillColor = color
+    data.Highlight.OutlineColor = color
+
+    local visible = false
+    if getgenv().AllEsp then
+        visible = true
+    elseif getgenv().MurderEsp and role == "Murderer" then
+        visible = true
+    elseif getgenv().SheriffEsp and role == "Sheriff" then
+        visible = true
+    end
+    data.Highlight.Enabled = visible
+    data.Billboard.Enabled = visible
+end
+
+local function updateAllESP()
+    for player, data in pairs(espData) do
+        if player and player.Parent then
+            updateESPForPlayer(player)
+        else
+            -- cleanup jika player hilang
+            if data.Highlight then data.Highlight:Destroy() end
+            if data.Billboard then data.Billboard:Destroy() end
+            espData[player] = nil
         end
-        pcall(function()
-            Billboard.Adornee = player.Character and player.Character:FindFirstChild("Head")
-            if player.Character and (player.Character:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife")) then
-                TextLabel.TextColor3 = Color3.new(1, 0, 0)
-                Billboard.Enabled = getgenv().MurderEsp
-            elseif player.Character and (player.Character:FindFirstChild("Gun") or player.Backpack:FindFirstChild("Gun")) then
-                TextLabel.TextColor3 = Color3.new(0, 0, 1)
-                Billboard.Enabled = getgenv().SheriffEsp
-            else
-                TextLabel.TextColor3 = Color3.new(0, 1, 0)
-                Billboard.Enabled = getgenv().AllEsp
+    end
+end
+
+-- Update jarak setiap frame
+RunService.Heartbeat:Connect(function()
+    local myChar = LocalPlayer.Character
+    local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
+    for player, data in pairs(espData) do
+        if player and player.Parent and player.Character then
+            local head = player.Character:FindFirstChild("Head")
+            if head then
+                data.Billboard.Adornee = head
+                if myPos then
+                    local dist = (head.Position - myPos).Magnitude
+                    data.DistanceLabel.Text = string.format("%.0fm", dist)
+                end
             end
-        end)
-    end)
-end
-
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        task.spawn(AddBillboard, player)
-    end
-end
-
-Players.PlayerAdded:Connect(function(player)
-    if player ~= LocalPlayer then
-        task.spawn(AddBillboard, player)
+        end
     end
 end)
 
-Players.PlayerRemoving:Connect(function(player)
-    local bill = ESPFolder:FindFirstChild(player.Name .. "_ESP")
-    if bill then bill:Destroy() end
-end)
-
-Window:AddToggle(TabESP, "All ESP", "Show every player (green)", false, function(v)
+-- Toggle ESP dengan logika mutually exclusive
+Window:AddToggle(TabESP, "All ESP", "Show every player (glow green)", false, function(v)
     getgenv().AllEsp = v
     if v then
         getgenv().MurderEsp = false
         getgenv().SheriffEsp = false
     end
+    updateAllESP()
 end, "AllESPToggle")
 
-Window:AddToggle(TabESP, "Murder ESP", "Show murderer (red)", false, function(v)
+Window:AddToggle(TabESP, "Murder ESP", "Show murderer (glow red)", false, function(v)
     getgenv().MurderEsp = v
     if v then
         getgenv().AllEsp = false
+        getgenv().SheriffEsp = false
     end
+    updateAllESP()
 end, "MurderESPToggle")
 
-Window:AddToggle(TabESP, "Sheriff ESP", "Show sheriff (blue)", false, function(v)
+Window:AddToggle(TabESP, "Sheriff ESP", "Show sheriff (glow blue)", false, function(v)
     getgenv().SheriffEsp = v
     if v then
         getgenv().AllEsp = false
+        getgenv().MurderEsp = false
     end
+    updateAllESP()
 end, "SheriffESPToggle")
 
+-- Buat ESP untuk player yang sudah ada dan yang baru
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        task.spawn(function()
+            if player.Character then
+                createESP(player)
+            end
+            player.CharacterAdded:Connect(function()
+                createESP(player)
+            end)
+        end)
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    if player ~= LocalPlayer then
+        player.CharacterAdded:Connect(function()
+            createESP(player)
+        end)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    local data = espData[player]
+    if data then
+        if data.Highlight then data.Highlight:Destroy() end
+        if data.Billboard then data.Billboard:Destroy() end
+        espData[player] = nil
+    end
+end)
+
 -- ============================================
--- TAB: AIM
+-- TAB: AIM (SAMA SEPERTI SEBELUMNYA)
 -- ============================================
 local TabAim = Window:CreateTab("Aim")
 Window:AddParagraph(TabAim, "Sheriff Aimbot", "For Sheriff (Gun)")
@@ -222,7 +329,7 @@ Window:AddToggle(TabAim, "Auto Melee", "Attack nearby enemies with knife", false
 Window:AddSlider(TabAim, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) meleeRadius = v end, "MeleeRadius", true)
 
 -- ============================================
--- FUNGSI UTAMA
+-- FUNGSI UTAMA (SAMA)
 -- ============================================
 local function isMurderer(player)
     if not player then return false end
@@ -526,4 +633,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ MM2 OP Hub FINAL STABLE loaded – No Labels, only ESP + Aimbot + Auto Tools.")
+print("✅ MM2 W424HUB")
