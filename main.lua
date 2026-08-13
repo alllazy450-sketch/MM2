@@ -1,7 +1,7 @@
 -- ============================================
--- W424HUB –
+-- W424HUB – V1
 -- ============================================
-print("=== LOADING W424HUB FINAL ESP FIX ===")
+print("=== LOADING W424HUB ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -24,7 +24,7 @@ local Camera = workspace.CurrentCamera
 local Window = Kairo:CreateWindow({
     Title = "W424HUB",
     Theme = "Ocean",
-    Size = UDim2.fromOffset(530, 410),
+    Size = UDim2.fromOffset(500, 450),
     Center = true,
     Draggable = true,
     Resize = false,
@@ -45,44 +45,53 @@ Window:Notify({
 })
 
 -- ============================================
--- FUNGSI GET ROLE (SEDERHANA & AKURAT)
+-- FUNGSI GET ROLE (AKURAT - PAKAI METODE EUGENE)
 -- ============================================
-local function getPlayerRole(player)
-    if not player then return "Innocent" end
+local function getRole(player)
+    if not player or not player.Character then return "Innocent" end
 
-    -- Cek tool di karakter (tangan)
-    local char = player.Character
-    if char then
-        for _, child in ipairs(char:GetChildren()) do
-            if child:IsA("Tool") then
-                local name = child.Name
-                if name == "Knife" then return "Murderer" end
-                if name == "Gun" then return "Sheriff" end
-            end
-        end
-    end
+    local hasKnife = false
+    local hasGun = false
 
     -- Cek di backpack
-    local backpack = player:FindFirstChildOfClass("Backpack")
+    local backpack = player:FindFirstChild("Backpack")
     if backpack then
-        for _, child in ipairs(backpack:GetChildren()) do
-            if child:IsA("Tool") then
-                local name = child.Name
-                if name == "Knife" then return "Murderer" end
-                if name == "Gun" then return "Sheriff" end
+        for _, tool in ipairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") then
+                local name = tool.Name:lower()
+                if name:find("knife") or name:find("murderer") or name:find("blade") then
+                    hasKnife = true
+                end
+                if name:find("gun") or name:find("revolver") or name:find("sheriff") or name:find("pistol") then
+                    hasGun = true
+                end
             end
         end
     end
 
+    -- Cek tool yang sedang dipegang
+    local charTool = player.Character:FindFirstChildOfClass("Tool")
+    if charTool then
+        local name = charTool.Name:lower()
+        if name:find("knife") or name:find("murderer") or name:find("blade") then
+            hasKnife = true
+        end
+        if name:find("gun") or name:find("revolver") or name:find("sheriff") or name:find("pistol") then
+            hasGun = true
+        end
+    end
+
+    if hasKnife then return "Murderer" end
+    if hasGun then return "Sheriff" end
     return "Innocent"
 end
 
 local function isMurderer(player)
-    return getPlayerRole(player) == "Murderer"
+    return getRole(player) == "Murderer"
 end
 
 local function isSheriff(player)
-    return getPlayerRole(player) == "Sheriff"
+    return getRole(player) == "Sheriff"
 end
 
 local function CharacterRayOrigin(char)
@@ -105,7 +114,7 @@ local function hasClearLOS(fromPos, toPos, myChar, targetChar)
 end
 
 -- ============================================
--- TAB SHERIFF
+-- TAB SHERIFF (AIMBOT + AUTO SHOOT)
 -- ============================================
 local TabSheriff = Window:CreateTab("Sheriff")
 Window:AddParagraph(TabSheriff, "Sheriff Aimbot", "Aktif jika memegang Gun")
@@ -185,7 +194,7 @@ local function updateESPVisual(player)
         return
     end
 
-    local role = getPlayerRole(player)
+    local role = getRole(player)
     local color = role == "Murderer" and Color3.new(1, 0, 0) or
                   role == "Sheriff" and Color3.new(0, 0, 1) or
                   Color3.new(0, 1, 0)
@@ -350,7 +359,7 @@ end)
 -- FUNGSI TARGET FILTER UNTUK SHERIFF
 -- ============================================
 local function isSheriffTargetAllowed(player)
-    local role = getPlayerRole(player)
+    local role = getRole(player)
     if sheriffTargetMode == "Murderer Only" and role == "Murderer" then return true end
     if sheriffTargetMode == "Innocent Only" and role == "Innocent" then return true end
     if sheriffTargetMode == "All Players" then return true end
@@ -406,7 +415,7 @@ end
 -- FUNGSI TARGET FILTER UNTUK MURDERER
 -- ============================================
 local function isMurdererTargetAllowed(player)
-    local role = getPlayerRole(player)
+    local role = getRole(player)
     if murdererThrowTarget == "Sheriff Only" and role == "Sheriff" then return true end
     if murdererThrowTarget == "Innocent Only" and role == "Innocent" then return true end
     if murdererThrowTarget == "All Players" then return true end
@@ -454,7 +463,7 @@ local function getMurdererTargets()
 end
 
 -- ============================================
--- AIMBOT SHERIFF LOOP
+-- AIMBOT SHERIFF LOOP (DENGAN AUTO SHOOT)
 -- ============================================
 local function isShooting()
     return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or
@@ -466,11 +475,16 @@ RunService.RenderStepped:Connect(function(dt)
 
     local myChar = LocalPlayer.Character
     if not myChar then return end
+
+    -- Cek apakah memegang Gun (Sheriff)
     local hasGun = false
     for _, tool in ipairs(myChar:GetChildren()) do
-        if tool:IsA("Tool") and tool.Name == "Gun" then
-            hasGun = true
-            break
+        if tool:IsA("Tool") then
+            local name = tool.Name:lower()
+            if name:find("gun") or name:find("revolver") or name:find("pistol") or name:find("sheriff") then
+                hasGun = true
+                break
+            end
         end
     end
     if not hasGun then return end
@@ -502,6 +516,7 @@ RunService.RenderStepped:Connect(function(dt)
         Camera.CFrame = targetCF
     end
 
+    -- AUTO SHOOT (diperbaiki)
     if sheriffAutoShoot and target then
         local center = Camera.ViewportSize / 2
         local pos, on = Camera:WorldToViewportPoint(target.Position)
@@ -511,7 +526,9 @@ RunService.RenderStepped:Connect(function(dt)
                 if origin and target.Part then
                     local hitPart = target.Part
                     local targetPos2 = hitPart.Position
+                    -- Kirim remote tembak
                     ReplicatedStorage.Remotes.ShootGun:FireServer(origin, targetPos2, hitPart, targetPos2)
+                    -- Mainkan suara tembakan
                     local tool = myChar:FindFirstChildOfClass("Tool")
                     if tool and tool:FindFirstChild("Fire") then
                         tool.Fire:Play()
@@ -534,7 +551,7 @@ local function equipKnife()
     local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
     if not backpack then return false end
     for _, tool in ipairs(backpack:GetChildren()) do
-        if tool:IsA("Tool") and tool.Name == "Knife" then
+        if tool:IsA("Tool") and (tool.Name:lower():find("knife") or tool.Name:lower():find("blade")) then
             hum:EquipTool(tool)
             return true
         end
@@ -546,7 +563,7 @@ local function throwKnifeAt(targetChar, targetPos)
     local char = LocalPlayer.Character
     if not char then return end
     local tool = char:FindFirstChildOfClass("Tool")
-    if not tool or tool.Name ~= "Knife" then return end
+    if not tool or not (tool.Name:lower():find("knife") or tool.Name:lower():find("blade")) then return end
     local rightHandle = tool:FindFirstChild("RightHandle")
     if not rightHandle then return end
 
@@ -599,7 +616,7 @@ task.spawn(function()
         if murdererAutoEquip then
             local hasKnife = false
             for _, tool in ipairs(char:GetChildren()) do
-                if tool:IsA("Tool") and tool.Name == "Knife" then
+                if tool:IsA("Tool") and (tool.Name:lower():find("knife") or tool.Name:lower():find("blade")) then
                     hasKnife = true
                     break
                 end
@@ -650,4 +667,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ W424HUB FINAL ESP FIX loaded")
+print("✅ W424HUB FINAL loaded")
