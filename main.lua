@@ -1,17 +1,50 @@
 -- ============================================================
--- W424HUB – MM2 REBUILD (KAIRO UI)
+-- W424HUB – RAYFIELD UI (MM2 EDITION)
 -- ============================================================
-print("=== LOADING W424HUB MM2 REBUILD ===")
+print("=== LOADING W424HUB RAYFIELD ===")
 
--- Tunggu game fully loaded (biar Kairo gak error)
+-- Tunggu game fully loaded
 task.wait(3)
 
-local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
-if not Kairo then
-    warn("❌ Kairo gagal di-load! Coba refresh atau cek koneksi.")
+-- Load Rayfield UI
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+if not Rayfield then
+    warn("❌ Rayfield gagal di-load!")
     return
 end
 
+-- ============================================================
+-- WINDOW RAYFIELD
+-- ============================================================
+local Window = Rayfield:CreateWindow({
+    Name = "W424HUB",
+    LoadingTitle = "W424HUB",
+    LoadingSubtitle = "by W424",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "W424HUB_Config",
+        FileName = "W424HUB"
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "",
+        RememberJoins = true
+    },
+    KeySystem = false,
+    KeySettings = {
+        Title = "W424HUB",
+        Subtitle = "Key System",
+        Note = "No key required",
+        FileName = "W424HUB_Key",
+        SaveKey = true,
+        GrabKeyFromSite = false,
+        Key = {"nil"}
+    }
+})
+
+-- ============================================================
+-- FUNGSI GET ROLE
+-- ============================================================
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,55 +54,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local StarterGui = game:GetService("StarterGui")
-local TweenService = game:GetService("TweenService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
-
--- ============================================================
--- WINDOW KAIRO
--- ============================================================
-local Window = Kairo:CreateWindow({
-    Title = "W424HUB",
-    Theme = "Ocean",
-    Size = UDim2.fromOffset(520, 480),
-    Center = true,
-    Draggable = true,
-    Resize = false,
-    Badges = {"v3.0"},
-    MinimizeKey = Enum.KeyCode.RightShift,
-    MinimizeButton = true,
-    Config = { Enabled = true, Folder = "W424HUB_Config", AutoLoad = true }
-})
-
-if not Window then return end
-
-Window:Notify({
-    Title = "W424HUB",
-    Description = "Rebuild sukses!",
-    Content = "ESP + Aimbot + Hitbox + Auto Tools",
-    Color = Color3.fromRGB(0, 200, 50),
-    Delay = 3
-})
-
--- ============================================================
--- TAB: MAIN (Semua fitur di satu tab agar simpel)
--- ============================================================
-local TabMain = Window:CreateTab("Main")
-
--- ============================================================
--- 1. ESP (HIGHLIGHT + BILLBOARD)
--- ============================================================
-Window:AddParagraph(TabMain, "ESP", "Player highlight + nama + jarak")
-
-local espEnabled = false
-Window:AddToggle(TabMain, "Enable ESP", "Tampilkan ESP", false, function(v)
-    espEnabled = v
-    refreshESP()
-end, "ESPToggle")
-
-local espData = {}
-local ESPFolder = Instance.new("Folder")
-ESPFolder.Name = "ESP_Holder"
-ESPFolder.Parent = CoreGui
 
 local function getRole(player)
     if not player or not player.Character then return "Innocent" end
@@ -91,6 +76,62 @@ local function getRole(player)
     end
     return "Innocent"
 end
+
+-- ============================================================
+-- FUNGSI HELPER
+-- ============================================================
+local function CharacterRayOrigin(char)
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    return (hrp.CFrame * CFrame.new(0,0,hrp.Size.Z/2)).Position
+end
+
+local function hasClearLOS(fromPos, toPos, myChar, targetChar)
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {myChar, targetChar}
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    local result = Workspace:Raycast(fromPos, (toPos - fromPos), params)
+    if result then
+        if not result.Instance:IsDescendantOf(targetChar) then return false end
+    end
+    return true
+end
+
+local function isShooting()
+    return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or
+           UserInputService:IsMouseButtonPressed(Enum.UserInputType.Touch)
+end
+
+local function getShootRemote()
+    local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ShootGun")
+    if not remote then remote = ReplicatedStorage:FindFirstChild("ShootGun") end
+    return remote
+end
+
+-- ============================================================
+-- TAB: MAIN
+-- ============================================================
+local MainTab = Window:CreateTab("Main", 4483362458)
+
+-- ============================================================
+-- 1. ESP
+-- ============================================================
+local SectionESP = MainTab:CreateSection("ESP")
+
+local espEnabled = false
+local espData = {}
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "ESP_Holder"
+ESPFolder.Parent = CoreGui
+
+MainTab:CreateToggle({
+    Name = "Enable ESP",
+    CurrentValue = false,
+    Callback = function(v)
+        espEnabled = v
+        refreshESP()
+    end
+})
 
 local function updateESP(player)
     local data = espData[player]
@@ -201,7 +242,6 @@ end)
 -- ============================================================
 -- 2. LINE ESP
 -- ============================================================
-Window:AddDivider(TabMain, "Line ESP")
 local lineEnabled = false
 local lineColor = Color3.fromRGB(0,255,255)
 local lineThick = 1.5
@@ -212,12 +252,22 @@ lineGui.Parent = CoreGui
 lineGui.ResetOnSpawn = false
 lineGui.IgnoreGuiInset = true
 
-Window:AddToggle(TabMain, "Enable Line ESP", "Draw tracers", false, function(v)
-    lineEnabled = v
-    if not v then clearLines() end
-end, "LineToggle")
-Window:AddColorPicker(TabMain, "Line Color", "", lineColor, function(c) lineColor = c end, "LineColor")
-Window:AddSlider(TabMain, "Line Thickness", "1-5", 1, 5, 1.5, function(v) lineThick = v end, "LineThick", true)
+MainTab:CreateToggle({
+    Name = "Enable Line ESP",
+    CurrentValue = false,
+    Callback = function(v)
+        lineEnabled = v
+        if not v then clearLines() end
+    end
+})
+
+MainTab:CreateColorPicker({
+    Name = "Line Color",
+    Default = Color3.fromRGB(0,255,255),
+    Callback = function(c)
+        lineColor = c
+    end
+})
 
 local function clearLines()
     for _, obj in pairs(lineObjects) do if obj then obj:Destroy() end end
@@ -267,7 +317,8 @@ end)
 -- ============================================================
 -- 3. FOV CIRCLE
 -- ============================================================
-Window:AddDivider(TabMain, "FOV Circle")
+local fovVisible = false
+local fovRadius = 150
 local fovGui = Instance.new("ScreenGui")
 fovGui.Name = "FOVCircleGUI"
 fovGui.Parent = CoreGui
@@ -287,18 +338,29 @@ fovStroke.Transparency = 0.5
 local fovCorner = Instance.new("UICorner", fovCircle)
 fovCorner.CornerRadius = UDim.new(1,0)
 
-Window:AddToggle(TabMain, "Show FOV Circle", "Display aim FOV", false, function(v)
-    fovCircle.Visible = v
-end, "FovToggle")
-Window:AddSlider(TabMain, "FOV Radius", "30-400", 30, 400, 150, function(v)
-    fovCircle.Size = UDim2.new(0, v*2, 0, v*2)
-end, "FovRadius", true)
+MainTab:CreateToggle({
+    Name = "Show FOV Circle",
+    CurrentValue = false,
+    Callback = function(v)
+        fovVisible = v
+        fovCircle.Visible = v
+    end
+})
+
+MainTab:CreateSlider({
+    Name = "FOV Radius",
+    Range = {30, 400},
+    Increment = 5,
+    CurrentValue = 150,
+    Callback = function(v)
+        fovRadius = v
+        fovCircle.Size = UDim2.new(0, v*2, 0, v*2)
+    end
+})
 
 -- ============================================================
 -- 4. AIMBOT (CAMERA)
 -- ============================================================
-Window:AddDivider(TabMain, "Aimbot (Camera)")
-
 local aimbotEnabled = false
 local aimTrigger = "On Shoot"
 local aimTargetMode = "Murderer Only"
@@ -312,48 +374,94 @@ local aimAutoShoot = false
 local aimAutoDelay = 0.1
 local aimTargetPart = "HumanoidRootPart"
 
-Window:AddToggle(TabMain, "Aimbot", "Enable camera aimbot", false, function(v) aimbotEnabled = v end, "AimbotToggle")
-Window:AddDropdown(TabMain, "Trigger", "When to aim", {"On Shoot","Always"}, false, "On Shoot", function(v) aimTrigger = v end, "AimTrigger")
-Window:AddDropdown(TabMain, "Target", "Who to aim", {"Murderer Only","All Players"}, false, "Murderer Only", function(v) aimTargetMode = v end, "AimTarget")
-Window:AddSlider(TabMain, "FOV", "30-400", 30, 400, 150, function(v) aimFOV = v end, "AimFOV", true)
-Window:AddSlider(TabMain, "Max Distance", "50-500", 50, 500, 300, function(v) aimMaxDist = v end, "AimDist", true)
-Window:AddSlider(TabMain, "Smoothness", "1-10", 1, 10, 5, function(v) aimSmooth = v/10 end, "AimSmooth", true)
-Window:AddToggle(TabMain, "Wall Check", "Don't aim through walls", true, function(v) aimWall = v end, "AimWall")
-Window:AddToggle(TabMain, "Prediction", "Aim ahead of moving target", false, function(v) aimPrediction = v end, "AimPred")
-Window:AddSlider(TabMain, "Pred Factor", "0-100", 0, 100, 20, function(v) aimPredFactor = v/100 end, "AimPredFactor", true)
-Window:AddToggle(TabMain, "Auto Shoot", "Shoot automatically", false, function(v) aimAutoShoot = v end, "AimAutoShoot")
-Window:AddSlider(TabMain, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) aimAutoDelay = v/100 end, "AimAutoDelay", true)
-Window:AddDropdown(TabMain, "Target Part", "Body part", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) aimTargetPart = v end, "AimPart")
+MainTab:CreateSection("Aimbot (Camera)")
 
--- Helper functions untuk aimbot
-local function CharacterRayOrigin(char)
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-    return (hrp.CFrame * CFrame.new(0,0,hrp.Size.Z/2)).Position
-end
+MainTab:CreateToggle({
+    Name = "Enable Aimbot",
+    CurrentValue = false,
+    Callback = function(v) aimbotEnabled = v end
+})
 
-local function hasClearLOS(fromPos, toPos, myChar, targetChar)
-    local params = RaycastParams.new()
-    params.FilterDescendantsInstances = {myChar, targetChar}
-    params.FilterType = Enum.RaycastFilterType.Exclude
-    local result = Workspace:Raycast(fromPos, (toPos - fromPos), params)
-    if result then
-        if not result.Instance:IsDescendantOf(targetChar) then return false end
-    end
-    return true
-end
+MainTab:CreateDropdown({
+    Name = "Trigger",
+    Options = {"On Shoot", "Always"},
+    CurrentOption = "On Shoot",
+    Callback = function(v) aimTrigger = v end
+})
 
-local function isShooting()
-    return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or
-           UserInputService:IsMouseButtonPressed(Enum.UserInputType.Touch)
-end
+MainTab:CreateDropdown({
+    Name = "Target",
+    Options = {"Murderer Only", "All Players"},
+    CurrentOption = "Murderer Only",
+    Callback = function(v) aimTargetMode = v end
+})
 
-local function getShootRemote()
-    local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ShootGun")
-    if not remote then remote = ReplicatedStorage:FindFirstChild("ShootGun") end
-    return remote
-end
+MainTab:CreateSlider({
+    Name = "FOV",
+    Range = {30, 400},
+    Increment = 5,
+    CurrentValue = 150,
+    Callback = function(v) aimFOV = v end
+})
 
+MainTab:CreateSlider({
+    Name = "Max Distance",
+    Range = {50, 500},
+    Increment = 10,
+    CurrentValue = 300,
+    Callback = function(v) aimMaxDist = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Smoothness",
+    Range = {1, 10},
+    Increment = 1,
+    CurrentValue = 5,
+    Callback = function(v) aimSmooth = v/10 end
+})
+
+MainTab:CreateToggle({
+    Name = "Wall Check",
+    CurrentValue = true,
+    Callback = function(v) aimWall = v end
+})
+
+MainTab:CreateToggle({
+    Name = "Prediction",
+    CurrentValue = false,
+    Callback = function(v) aimPrediction = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Pred Factor",
+    Range = {0, 100},
+    Increment = 5,
+    CurrentValue = 20,
+    Callback = function(v) aimPredFactor = v/100 end
+})
+
+MainTab:CreateToggle({
+    Name = "Auto Shoot",
+    CurrentValue = false,
+    Callback = function(v) aimAutoShoot = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Auto Shoot Delay",
+    Range = {5, 50},
+    Increment = 1,
+    CurrentValue = 10,
+    Callback = function(v) aimAutoDelay = v/100 end
+})
+
+MainTab:CreateDropdown({
+    Name = "Target Part",
+    Options = {"Head", "HumanoidRootPart", "Torso"},
+    CurrentOption = "HumanoidRootPart",
+    Callback = function(v) aimTargetPart = v end
+})
+
+-- Aimbot logic
 local function getAimbotTargets()
     local targets = {}
     local myChar = LocalPlayer.Character
@@ -437,9 +545,9 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 -- ============================================================
--- 5. SILENT AIM (Override Remote)
+-- 5. SILENT AIM
 -- ============================================================
-Window:AddDivider(TabMain, "Silent Aim")
+MainTab:CreateSection("Silent Aim")
 
 local silentEnabled = false
 local silentTargetMode = "Murderer Only"
@@ -548,19 +656,78 @@ local function GetClosestSilentTarget()
     return closest
 end
 
-Window:AddToggle(TabMain, "Enable Silent Aim", "Redirect bullets without moving camera", false, function(v)
-    silentEnabled = v
-    if v then setupSilentAim() end
-end, "SilentToggle")
-Window:AddDropdown(TabMain, "Silent Target", "Who to target", {"Murderer Only","All Players"}, false, "Murderer Only", function(v) silentTargetMode = v end, "SilentTarget")
-Window:AddDropdown(TabMain, "Silent Part", "Body part", {"Head","HumanoidRootPart","Torso"}, false, "Head", function(v) silentTargetPart = v end, "SilentPart")
-Window:AddSlider(TabMain, "Silent FOV", "30-400", 30, 400, 180, function(v) silentFOV = v end, "SilentFOV", true)
-Window:AddSlider(TabMain, "Silent Max Dist", "50-500", 50, 500, 300, function(v) silentMaxDist = v end, "SilentDist", true)
-Window:AddToggle(TabMain, "Silent Prediction", "Aim ahead", true, function(v) silentPrediction = v end, "SilentPred")
-Window:AddSlider(TabMain, "Silent Pred Factor", "0-100", 0, 100, 15, function(v) silentPredFactor = v/100 end, "SilentPredFactor", true)
-Window:AddToggle(TabMain, "Silent Vis Check", "Don't shoot through walls", true, function(v) silentVis = v end, "SilentVis")
-Window:AddToggle(TabMain, "Silent Auto Shoot", "Shoot automatically", false, function(v) silentAutoShoot = v end, "SilentAuto")
-Window:AddSlider(TabMain, "Silent Auto Delay", "0.05-0.5s", 5, 50, 10, function(v) silentAutoDelay = v/100 end, "SilentAutoDelay", true)
+MainTab:CreateToggle({
+    Name = "Enable Silent Aim",
+    CurrentValue = false,
+    Callback = function(v)
+        silentEnabled = v
+        if v then setupSilentAim() end
+    end
+})
+
+MainTab:CreateDropdown({
+    Name = "Silent Target",
+    Options = {"Murderer Only", "All Players"},
+    CurrentOption = "Murderer Only",
+    Callback = function(v) silentTargetMode = v end
+})
+
+MainTab:CreateDropdown({
+    Name = "Silent Part",
+    Options = {"Head", "HumanoidRootPart", "Torso"},
+    CurrentOption = "Head",
+    Callback = function(v) silentTargetPart = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Silent FOV",
+    Range = {30, 400},
+    Increment = 5,
+    CurrentValue = 180,
+    Callback = function(v) silentFOV = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Silent Max Dist",
+    Range = {50, 500},
+    Increment = 10,
+    CurrentValue = 300,
+    Callback = function(v) silentMaxDist = v end
+})
+
+MainTab:CreateToggle({
+    Name = "Silent Prediction",
+    CurrentValue = true,
+    Callback = function(v) silentPrediction = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Silent Pred Factor",
+    Range = {0, 100},
+    Increment = 5,
+    CurrentValue = 15,
+    Callback = function(v) silentPredFactor = v/100 end
+})
+
+MainTab:CreateToggle({
+    Name = "Silent Vis Check",
+    CurrentValue = true,
+    Callback = function(v) silentVis = v end
+})
+
+MainTab:CreateToggle({
+    Name = "Silent Auto Shoot",
+    CurrentValue = false,
+    Callback = function(v) silentAutoShoot = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Silent Auto Delay",
+    Range = {5, 50},
+    Increment = 1,
+    CurrentValue = 10,
+    Callback = function(v) silentAutoDelay = v/100 end
+})
 
 RunService.RenderStepped:Connect(function()
     if not silentEnabled or not silentAutoShoot then return end
@@ -600,7 +767,7 @@ end)
 -- ============================================================
 -- 6. HITBOX EXPANSION
 -- ============================================================
-Window:AddDivider(TabMain, "Hitbox Expansion")
+MainTab:CreateSection("Hitbox Expansion")
 local hitboxEnabled = false
 local hitboxSize = 15
 local hitboxAlpha = 0.3
@@ -609,34 +776,44 @@ local hitboxLoopRunning = false
 local hitboxLoopStop = false
 local originalSizes = {}
 
-Window:AddToggle(TabMain, "Enable Hitbox Expansion", "Perbesar hitbox musuh", false, function(v)
-    hitboxEnabled = v
-    if v then startHitboxLoop() else stopHitboxLoop() end
-end, "HitboxToggle")
-Window:AddDropdown(TabMain, "Hitbox Target Parts", "Pilih bagian tubuh", {"All","Head","Torso","Legs"}, false, "All", function(v)
-    hitboxTarget = v
-    if hitboxEnabled then
-        stopHitboxLoop()
-        task.wait(0.2)
-        startHitboxLoop()
+MainTab:CreateToggle({
+    Name = "Enable Hitbox Expansion",
+    CurrentValue = false,
+    Callback = function(v)
+        hitboxEnabled = v
+        if v then startHitboxLoop() else stopHitboxLoop() end
     end
-end, "HitboxTarget")
-Window:AddSlider(TabMain, "Hitbox Size", "1-30", 1, 30, 15, function(v) hitboxSize = v end, "HitboxSize", true)
-Window:AddSlider(TabMain, "Hitbox Alpha", "0-10", 0, 10, 3, function(v) hitboxAlpha = v/10 end, "HitboxAlpha", true)
-Window:AddButton(TabMain, "Reset Hitbox", "Kembalikan ukuran asli", function()
-    stopHitboxLoop()
-    hitboxEnabled = false
-    task.wait(0.3)
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local parts = getHitboxParts(player.Character)
-            for _, part in ipairs(parts) do
-                pcall(function() restoreOriginalSize(part) end)
-            end
+})
+
+MainTab:CreateDropdown({
+    Name = "Target Parts",
+    Options = {"All", "Head", "Torso", "Legs"},
+    CurrentOption = "All",
+    Callback = function(v)
+        hitboxTarget = v
+        if hitboxEnabled then
+            stopHitboxLoop()
+            task.wait(0.2)
+            startHitboxLoop()
         end
     end
-    Window:Notify({ Title = "Hitbox Reset", Description = "Hitbox dikembalikan ke default", Color = Color3.fromRGB(255,255,0), Delay = 2 })
-end, "ResetHitboxBtn")
+})
+
+MainTab:CreateSlider({
+    Name = "Hitbox Size",
+    Range = {1, 30},
+    Increment = 1,
+    CurrentValue = 15,
+    Callback = function(v) hitboxSize = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Hitbox Alpha",
+    Range = {0, 10},
+    Increment = 1,
+    CurrentValue = 3,
+    Callback = function(v) hitboxAlpha = v/10 end
+})
 
 local function getHitboxParts(character)
     local parts = {}
@@ -737,9 +914,9 @@ local function stopHitboxLoop()
 end
 
 -- ============================================================
--- 7. MURDERER TOOLS (AUTO THROW + AUTO MELEE)
+-- 7. MURDERER TOOLS
 -- ============================================================
-Window:AddDivider(TabMain, "Murderer Tools")
+MainTab:CreateSection("Murderer Tools")
 local murdererThrow = false
 local murdererThrowTarget = "All Players"
 local murdererThrowDist = 300
@@ -752,17 +929,74 @@ local murdererMelee = false
 local murdererMeleeRadius = 10
 local lastThrowTime = 0
 
-Window:AddToggle(TabMain, "Auto Throw Knife", "Throw knife automatically", false, function(v) murdererThrow = v end, "ThrowToggle")
-Window:AddDropdown(TabMain, "Throw Target", "Target", {"All Players","Sheriff Only","Innocent Only"}, false, "All Players", function(v) murdererThrowTarget = v end, "ThrowTarget")
-Window:AddSlider(TabMain, "Throw Max Dist", "50-500", 50, 500, 300, function(v) murdererThrowDist = v end, "ThrowDist", true)
-Window:AddSlider(TabMain, "Throw Cooldown", "0.5-10s", 0.5, 10, 2, function(v) murdererThrowCD = v end, "ThrowCD", true)
-Window:AddToggle(TabMain, "Throw Prediction", "Aim ahead", false, function(v) murdererThrowPred = v end, "ThrowPred")
-Window:AddSlider(TabMain, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) murdererThrowPredFactor = v/100 end, "ThrowPredFactor", true)
-Window:AddToggle(TabMain, "Throw Wall Check", "Don't throw through walls", true, function(v) murdererThrowWall = v end, "ThrowWall")
-Window:AddToggle(TabMain, "Auto Equip Knife", "Equip knife automatically", false, function(v) murdererAutoEquip = v end, "AutoEquip")
-Window:AddDivider(TabMain, "Auto Melee")
-Window:AddToggle(TabMain, "Auto Melee", "Attack nearby enemies", false, function(v) murdererMelee = v end, "MeleeToggle")
-Window:AddSlider(TabMain, "Melee Radius", "3-30", 3, 30, 10, function(v) murdererMeleeRadius = v end, "MeleeRadius", true)
+MainTab:CreateToggle({
+    Name = "Auto Throw Knife",
+    CurrentValue = false,
+    Callback = function(v) murdererThrow = v end
+})
+
+MainTab:CreateDropdown({
+    Name = "Throw Target",
+    Options = {"All Players", "Sheriff Only", "Innocent Only"},
+    CurrentOption = "All Players",
+    Callback = function(v) murdererThrowTarget = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Throw Max Dist",
+    Range = {50, 500},
+    Increment = 10,
+    CurrentValue = 300,
+    Callback = function(v) murdererThrowDist = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Throw Cooldown",
+    Range = {5, 100},
+    Increment = 1,
+    CurrentValue = 20,
+    Callback = function(v) murdererThrowCD = v/10 end
+})
+
+MainTab:CreateToggle({
+    Name = "Throw Prediction",
+    CurrentValue = false,
+    Callback = function(v) murdererThrowPred = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Throw Pred Factor",
+    Range = {0, 100},
+    Increment = 5,
+    CurrentValue = 20,
+    Callback = function(v) murdererThrowPredFactor = v/100 end
+})
+
+MainTab:CreateToggle({
+    Name = "Throw Wall Check",
+    CurrentValue = true,
+    Callback = function(v) murdererThrowWall = v end
+})
+
+MainTab:CreateToggle({
+    Name = "Auto Equip Knife",
+    CurrentValue = false,
+    Callback = function(v) murdererAutoEquip = v end
+})
+
+MainTab:CreateToggle({
+    Name = "Auto Melee",
+    CurrentValue = false,
+    Callback = function(v) murdererMelee = v end
+})
+
+MainTab:CreateSlider({
+    Name = "Melee Radius",
+    Range = {3, 30},
+    Increment = 1,
+    CurrentValue = 10,
+    Callback = function(v) murdererMeleeRadius = v end
+})
 
 local function equipKnife()
     local char = LocalPlayer.Character
@@ -920,13 +1154,28 @@ end)
 -- ============================================================
 -- 8. PLAYER MODS
 -- ============================================================
-Window:AddDivider(TabMain, "Player Mods")
+MainTab:CreateSection("Player Mods")
 local noRecoil = false
 local noSpread = false
 local antiRagdoll = false
-Window:AddToggle(TabMain, "No Recoil", "Remove shake", false, function(v) noRecoil = v end, "NoRecoil")
-Window:AddToggle(TabMain, "No Spread", "Perfect accuracy", false, function(v) noSpread = v end, "NoSpread")
-Window:AddToggle(TabMain, "Anti Ragdoll", "Prevent falling", false, function(v) antiRagdoll = v end, "AntiRagdoll")
+
+MainTab:CreateToggle({
+    Name = "No Recoil",
+    CurrentValue = false,
+    Callback = function(v) noRecoil = v end
+})
+
+MainTab:CreateToggle({
+    Name = "No Spread",
+    CurrentValue = false,
+    Callback = function(v) noSpread = v end
+})
+
+MainTab:CreateToggle({
+    Name = "Anti Ragdoll",
+    CurrentValue = false,
+    Callback = function(v) antiRagdoll = v end
+})
 
 RunService.RenderStepped:Connect(function()
     local char = LocalPlayer.Character
@@ -964,40 +1213,43 @@ end)
 -- ============================================================
 -- 9. REDUCE MAP
 -- ============================================================
-Window:AddDivider(TabMain, "Optimization")
+MainTab:CreateSection("Optimization")
 local reduceMap = false
-Window:AddToggle(TabMain, "Reduce Map", "Disable minimap", false, function(v)
-    reduceMap = v
-    pcall(function()
-        if v then
-            StarterGui:SetCore("MinimapEnabled", false)
-            for _, gui in ipairs(CoreGui:GetChildren()) do
-                if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = false end
-            end
-            for _, gui in ipairs(LocalPlayer.PlayerGui:GetChildren()) do
-                if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = false end
-            end
-        else
-            StarterGui:SetCore("MinimapEnabled", true)
-            for _, gui in ipairs(CoreGui:GetChildren()) do
-                if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = true end
-            end
-            for _, gui in ipairs(LocalPlayer.PlayerGui:GetChildren()) do
-                if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = true end
-            end
-        end
-    end)
-end, "ReduceMapToggle")
 
--- ============================================================
--- FINISH
--- ============================================================
-Window:Notify({
-    Title = "W424HUB",
-    Description = "Rebuild complete!",
-    Content = "Semua fitur dalam satu tab",
-    Color = Color3.fromRGB(0, 255, 255),
-    Delay = 5
+MainTab:CreateToggle({
+    Name = "Reduce Map",
+    CurrentValue = false,
+    Callback = function(v)
+        reduceMap = v
+        pcall(function()
+            if v then
+                StarterGui:SetCore("MinimapEnabled", false)
+                for _, gui in ipairs(CoreGui:GetChildren()) do
+                    if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = false end
+                end
+                for _, gui in ipairs(LocalPlayer.PlayerGui:GetChildren()) do
+                    if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = false end
+                end
+            else
+                StarterGui:SetCore("MinimapEnabled", true)
+                for _, gui in ipairs(CoreGui:GetChildren()) do
+                    if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = true end
+                end
+                for _, gui in ipairs(LocalPlayer.PlayerGui:GetChildren()) do
+                    if gui.Name and gui.Name:lower():find("minimap") then gui.Enabled = true end
+                end
+            end
+        end)
+    end
 })
 
-print("✅ W424HUB REBUILD loaded – All features in one tab!")
+-- ============================================================
+-- NOTIFIKASI SELESAI
+-- ============================================================
+Rayfield:Notify({
+    Title = "W424HUB",
+    Content = "Loaded successfully!",
+    Duration = 5
+})
+
+print("✅ W424HUB RAYFIELD loaded – All features ready!")
