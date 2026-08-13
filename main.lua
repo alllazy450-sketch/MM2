@@ -1,7 +1,7 @@
 -- ============================================
--- MURDER MYSTERY 2 OP – V1
+-- MURDER MYSTERY 2 OP – MINIMAL (KAIRO UI)
 -- ============================================
-print("=== LOADING MM2 ===")
+print("=== LOADING MM2 OP MINIMAL ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -18,11 +18,9 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 
--- ============================================
--- WINDOW KAIRO
--- ============================================
+-- WINDOW
 local Window = Kairo:CreateWindow({
-    Title = "MM2 W424 Hub",
+    Title = "MM2 OP Hub",
     Theme = "Ocean",
     Size = UDim2.fromOffset(500, 450),
     Center = true,
@@ -34,79 +32,37 @@ local Window = Kairo:CreateWindow({
     Config = { Enabled = true, Folder = "MM2OP_Config", AutoLoad = true }
 })
 
-if not Window then
-    warn("❌ Gagal membuat window!")
-    return
-end
+if not Window then return end
 
 Window:Notify({
     Title = "MM2 OP Hub",
     Description = "Loaded successfully!",
-    Content = "Aimbot, Auto Throw, Auto Melee, ESP",
+    Content = "ESP + Aimbot + Auto Tools",
     Color = Color3.fromRGB(0, 200, 50),
     Delay = 3
 })
 
 -- ============================================
--- TAB: ROLES & ESP
+-- TAB: ROLES & ESP (Tanpa Tombol)
 -- ============================================
 local TabRoles = Window:CreateTab("Roles & ESP")
 
-Window:AddParagraph(TabRoles, "Role Exposure", "Chat roles")
-
--- BUTTON PAKAI 5 PARAMETER
-Window:AddButton(TabRoles, "Chat Expose Roles", "Say who has knife/gun in chat", function()
-    local allPlayers = Players:GetPlayers()
-    for _, player in ipairs(allPlayers) do
-        local backpack = player:FindFirstChild("Backpack")
-        if backpack then
-            if backpack:FindFirstChild("Knife") then
-                ReplicatedStorage:WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest"):FireServer(
-                    player.Name .. ": Has The Knife", "normalchat"
-                )
-            end
-            if backpack:FindFirstChild("Gun") then
-                ReplicatedStorage:WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest"):FireServer(
-                    player.Name .. ": Has The Gun", "normalchat"
-                )
-            end
-        end
-    end
-    Window:Notify({
-        Title = "Roles Exposed",
-        Description = "Check chat!",
-        Color = Color3.fromRGB(0, 200, 255),
-        Delay = 3
-    })
-end, "ExposeRolesBtn")
-
 -- Gun Drop Status
-Window:AddDivider(TabRoles, "Gun Drop Status")
+Window:AddParagraph(TabRoles, "Gun Drop Status", "Auto-update")
 local gunLabel = Window:AddLabel(TabRoles, "Gun Drop Status: Unknown", "GunLabel")
 task.spawn(function()
-    local gunDropped = false
     while true do
         local gunExists = Workspace:FindFirstChild("GunDrop")
         if gunExists then
             gunLabel:SetText("Gun Drop Status: Dropped ✔️")
-            if not gunDropped then
-                gunDropped = true
-                Window:Notify({
-                    Title = "Gun Status",
-                    Description = "Gun Dropped!",
-                    Color = Color3.fromRGB(255, 200, 0),
-                    Delay = 5
-                })
-            end
         else
             gunLabel:SetText("Gun Drop Status: Not Dropped ❌")
-            gunDropped = false
         end
         task.wait(1)
     end
 end)
 
--- Role Labels
+-- Role Detector
 Window:AddDivider(TabRoles, "Role Detector")
 local murdererLabel = Window:AddLabel(TabRoles, "Murderer: Unknown", "MurdererLabel")
 local sheriffLabel = Window:AddLabel(TabRoles, "Sheriff: Unknown", "SheriffLabel")
@@ -134,7 +90,7 @@ task.spawn(function()
     end
 end)
 
--- ESP
+-- ESP Billboard
 Window:AddDivider(TabRoles, "ESP (Billboard)")
 local ESPFolder = Instance.new("Folder")
 ESPFolder.Name = "ESP_Holder"
@@ -203,24 +159,12 @@ Players.PlayerRemoving:Connect(function(player)
     if bill then bill:Destroy() end
 end)
 
+-- ESP Toggles (tanpa tombol)
 Window:AddToggle(TabRoles, "All ESP", "Show every player (green)", false, function(v)
     getgenv().AllEsp = v
     if v then
         getgenv().MurderEsp = false
         getgenv().SheriffEsp = false
-    end
-    for _, bill in ipairs(ESPFolder:GetChildren()) do
-        if bill:IsA("BillboardGui") then
-            local pName = bill.Name:gsub("_ESP", "")
-            local player = Players:FindFirstChild(pName)
-            if player then
-                local hasKnife = player.Character and (player.Character:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife"))
-                local hasGun = player.Character and (player.Character:FindFirstChild("Gun") or player.Backpack:FindFirstChild("Gun"))
-                if not (hasKnife or hasGun) then
-                    bill.Enabled = v
-                end
-            end
-        end
     end
 end, "AllESPToggle")
 
@@ -229,15 +173,6 @@ Window:AddToggle(TabRoles, "Murder ESP", "Show murderer (red)", false, function(
     if v then
         getgenv().AllEsp = false
     end
-    for _, bill in ipairs(ESPFolder:GetChildren()) do
-        if bill:IsA("BillboardGui") then
-            local pName = bill.Name:gsub("_ESP", "")
-            local player = Players:FindFirstChild(pName)
-            if player and (player.Character and player.Character:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife")) then
-                bill.Enabled = v
-            end
-        end
-    end
 end, "MurderESPToggle")
 
 Window:AddToggle(TabRoles, "Sheriff ESP", "Show sheriff (blue)", false, function(v)
@@ -245,19 +180,10 @@ Window:AddToggle(TabRoles, "Sheriff ESP", "Show sheriff (blue)", false, function
     if v then
         getgenv().AllEsp = false
     end
-    for _, bill in ipairs(ESPFolder:GetChildren()) do
-        if bill:IsA("BillboardGui") then
-            local pName = bill.Name:gsub("_ESP", "")
-            local player = Players:FindFirstChild(pName)
-            if player and (player.Character and player.Character:FindFirstChild("Gun") or player.Backpack:FindFirstChild("Gun")) then
-                bill.Enabled = v
-            end
-        end
-    end
 end, "SheriffESPToggle")
 
 -- ============================================
--- TAB: AIM
+-- TAB: AIM (Aimbot + Murderer Tools)
 -- ============================================
 local TabAim = Window:CreateTab("Aim")
 Window:AddParagraph(TabAim, "Sheriff Aimbot", "For Sheriff (Gun)")
@@ -296,7 +222,7 @@ Window:AddToggle(TabAim, "Auto Shoot", "Shoot automatically when on target", fal
 Window:AddSlider(TabAim, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) autoShootDelay = v / 100 end, "AutoShootDelay", true)
 Window:AddDropdown(TabAim, "Target Part", "Body part", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) targetPartName = v end, "TargetPartDrop")
 
--- FOV Circle
+-- FOV Circle GUI
 local fovGui = Instance.new("ScreenGui")
 fovGui.Name = "MM2_FOV"
 fovGui.Parent = CoreGui
@@ -341,7 +267,7 @@ Window:AddToggle(TabAim, "Auto Melee", "Attack nearby enemies with knife", false
 Window:AddSlider(TabAim, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) meleeRadius = v end, "MeleeRadius", true)
 
 -- ============================================
--- FUNGSI UTAMA (SAMA SEPERTI SEBELUMNYA)
+-- FUNGSI UTAMA (SAMA)
 -- ============================================
 local function isMurderer(player)
     if not player then return false end
@@ -645,71 +571,4 @@ task.spawn(function()
     end
 end)
 
--- ============================================
--- TAB: MISC
--- ============================================
-local TabMisc = Window:CreateTab("Misc")
-
-Window:AddParagraph(TabMisc, "Emotes", "Unlock all free emotes")
-Window:AddButton(TabMisc, "Get Every Emote", "Add all free emotes", function()
-    local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-    local Emotes = PlayerGui:WaitForChild("MainGUI"):WaitForChild("Game"):FindFirstChild("Emotes")
-    if Emotes then
-        local success, err = pcall(function()
-            require(ReplicatedStorage.Modules.EmoteModule).GeneratePage({"headless","zombie","zen","ninja","floss","dab","sit"}, Emotes, "Free Emotes")
-        end)
-        if success then
-            Window:Notify({
-                Title = "Emotes",
-                Description = "Successfully added emotes!",
-                Color = Color3.fromRGB(0, 255, 0),
-                Delay = 3
-            })
-        else
-            Window:Notify({
-                Title = "Emotes",
-                Description = "Error: " .. err,
-                Color = Color3.fromRGB(255, 0, 0),
-                Delay = 3
-            })
-        end
-    else
-        Window:Notify({
-            Title = "Emotes",
-            Description = "Emotes folder not found.",
-            Color = Color3.fromRGB(255, 255, 0),
-            Delay = 3
-        })
-    end
-end, "EmoteBtn")
-
-Window:AddDivider(TabMisc, "Weapons")
-Window:AddParagraph(TabMisc, "Get Every Gun/Knife", "Client-side unlock (may need respawn)")
-Window:AddButton(TabMisc, "Unlock All Weapons", "Unlock all guns and knives", function()
-    local success, result = pcall(function()
-        local Database = getrenv()._G.Database
-        local PlayerData = getrenv()._G.PlayerData
-        if not Database or not PlayerData then
-            error("Database or PlayerData not found.")
-        end
-        local newOwned = {}
-        for weapon, _ in pairs(Database.Item) do
-            newOwned[weapon] = 999999999
-        end
-        local PlayerWeapons = PlayerData.Weapons
-        local bind
-        bind = RunService:BindToRenderStep("InventoryUpdate", 0, function()
-            PlayerWeapons.Owned = newOwned
-        end)
-        task.wait(1)
-        RunService:UnbindFromRenderStep("InventoryUpdate")
-        return "Weapons updated (client-side). You may need to respawn."
-    end)
-    if success then
-        Window:Notify({ Title = "Weapons", Description = tostring(result), Color = Color3.fromRGB(0,255,0), Delay = 5 })
-    else
-        Window:Notify({ Title = "Weapons", Description = "Failed: " .. tostring(result), Color = Color3.fromRGB(255,0,0), Delay = 5 })
-    end
-end, "WeaponBtn")
-
-print("✅ MM2 OP Hub LOADED")
+print("✅ MM2 OP Hub (MINIMAL) loaded – No buttons, only ESP + Aimbot + Auto Tools.")
