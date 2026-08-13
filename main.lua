@@ -1,7 +1,7 @@
 -- ============================================
 -- W424HUB –
 -- ============================================
-print("=== LOADING ===")
+print("=== LOADING W424HUB FINAL ESP FIX ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -24,7 +24,7 @@ local Camera = workspace.CurrentCamera
 local Window = Kairo:CreateWindow({
     Title = "W424HUB",
     Theme = "Ocean",
-    Size = UDim2.fromOffset(500, 450),
+    Size = UDim2.fromOffset(530, 410),
     Center = true,
     Draggable = true,
     Resize = false,
@@ -45,18 +45,20 @@ Window:Notify({
 })
 
 -- ============================================
--- FUNGSI GET ROLE (DIPERBAIKI)
+-- FUNGSI GET ROLE (SEDERHANA & AKURAT)
 -- ============================================
-local function getRole(player)
+local function getPlayerRole(player)
     if not player then return "Innocent" end
-    local char = player.Character
-    if not char then return "Innocent" end
 
     -- Cek tool di karakter (tangan)
-    for _, child in ipairs(char:GetChildren()) do
-        if child:IsA("Tool") then
-            if child.Name == "Knife" then return "Murderer" end
-            if child.Name == "Gun" then return "Sheriff" end
+    local char = player.Character
+    if char then
+        for _, child in ipairs(char:GetChildren()) do
+            if child:IsA("Tool") then
+                local name = child.Name
+                if name == "Knife" then return "Murderer" end
+                if name == "Gun" then return "Sheriff" end
+            end
         end
     end
 
@@ -65,8 +67,9 @@ local function getRole(player)
     if backpack then
         for _, child in ipairs(backpack:GetChildren()) do
             if child:IsA("Tool") then
-                if child.Name == "Knife" then return "Murderer" end
-                if child.Name == "Gun" then return "Sheriff" end
+                local name = child.Name
+                if name == "Knife" then return "Murderer" end
+                if name == "Gun" then return "Sheriff" end
             end
         end
     end
@@ -75,11 +78,11 @@ local function getRole(player)
 end
 
 local function isMurderer(player)
-    return getRole(player) == "Murderer"
+    return getPlayerRole(player) == "Murderer"
 end
 
 local function isSheriff(player)
-    return getRole(player) == "Sheriff"
+    return getPlayerRole(player) == "Sheriff"
 end
 
 local function CharacterRayOrigin(char)
@@ -182,7 +185,7 @@ local function updateESPVisual(player)
         return
     end
 
-    local role = getRole(player)
+    local role = getPlayerRole(player)
     local color = role == "Murderer" and Color3.new(1, 0, 0) or
                   role == "Sheriff" and Color3.new(0, 0, 1) or
                   Color3.new(0, 1, 0)
@@ -347,7 +350,7 @@ end)
 -- FUNGSI TARGET FILTER UNTUK SHERIFF
 -- ============================================
 local function isSheriffTargetAllowed(player)
-    local role = getRole(player)
+    local role = getPlayerRole(player)
     if sheriffTargetMode == "Murderer Only" and role == "Murderer" then return true end
     if sheriffTargetMode == "Innocent Only" and role == "Innocent" then return true end
     if sheriffTargetMode == "All Players" then return true end
@@ -403,7 +406,7 @@ end
 -- FUNGSI TARGET FILTER UNTUK MURDERER
 -- ============================================
 local function isMurdererTargetAllowed(player)
-    local role = getRole(player)
+    local role = getPlayerRole(player)
     if murdererThrowTarget == "Sheriff Only" and role == "Sheriff" then return true end
     if murdererThrowTarget == "Innocent Only" and role == "Innocent" then return true end
     if murdererThrowTarget == "All Players" then return true end
@@ -465,7 +468,7 @@ RunService.RenderStepped:Connect(function(dt)
     if not myChar then return end
     local hasGun = false
     for _, tool in ipairs(myChar:GetChildren()) do
-        if tool:IsA("Tool") and tool:FindFirstChild("Fire") then
+        if tool:IsA("Tool") and tool.Name == "Gun" then
             hasGun = true
             break
         end
@@ -647,4 +650,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ W424HUB NO BUBBLE loaded")
+print("✅ W424HUB FINAL ESP FIX loaded")
