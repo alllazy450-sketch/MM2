@@ -1,6 +1,6 @@
 -- ============================================================
--- W424HUB – FULL SCRIPT (KAIRO UI)
--- = ===========================================================
+-- W424HUB --
+-- ============================================================
 print("=== LOADING W424HUB FULL ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
@@ -27,11 +27,11 @@ local TweenService = game:GetService("TweenService")
 local Window = Kairo:CreateWindow({
     Title = "W424HUB",
     Theme = "Ocean",
-    Size = UDim2.fromOffset(500, 450),
+    Size = UDim2.fromOffset(500, 480),
     Center = true,
     Draggable = true,
     Resize = false,
-    Badges = {"v3.0"},
+    Badges = {"v1.0"},
     MinimizeKey = Enum.KeyCode.RightShift,
     MinimizeButton = true,
     Config = { Enabled = true, Folder = "W424HUB_Config", AutoLoad = true }
@@ -42,7 +42,7 @@ if not Window then return end
 Window:Notify({
     Title = "W424HUB",
     Description = "Loaded successfully!",
-    Content = "Silent Aim + Aimbot + ESP + Auto Tools",
+    Content = "Aimbot + Silent Aim + ESP + Hitbox Expansion",
     Color = Color3.fromRGB(0, 200, 50),
     Delay = 3
 })
@@ -134,6 +134,155 @@ Window:AddDivider(TabAim, "Auto Melee")
 Window:AddToggle(TabAim, "Auto Melee", "Attack nearby enemies", false, function(v) murdererMelee = v end, "MeleeToggle")
 Window:AddSlider(TabAim, "Melee Radius", "3-30", 3, 30, 10, function(v) murdererMeleeRadius = v end, "MeleeRadius", true)
 
+-- ===== SECTION: HITBOX EXPANSION =====
+Window:AddDivider(TabAim, "Hitbox Expansion")
+local hitboxEnabled = false
+local hitboxSize = 15
+local hitboxAlpha = 0.3
+local hitboxTarget = "All"
+local hitboxLoopRunning = false
+local hitboxLoopStop = false
+local originalSizes = {}
+
+Window:AddToggle(TabAim, "Enable Hitbox Expansion", "Perbesar hitbox musuh", false, function(v)
+    hitboxEnabled = v
+    if v then
+        startHitboxLoop()
+    else
+        stopHitboxLoop()
+    end
+end, "HitboxToggle")
+
+Window:AddDropdown(TabAim, "Hitbox Target Parts", "Pilih bagian tubuh", {"All","Head","Torso","Legs"}, false, "All", function(v)
+    hitboxTarget = v
+    if hitboxEnabled then
+        stopHitboxLoop()
+        task.wait(0.2)
+        startHitboxLoop()
+    end
+end, "HitboxTarget")
+
+Window:AddSlider(TabAim, "Hitbox Size", "1-30", 1, 30, 15, function(v) hitboxSize = v end, "HitboxSize", true)
+Window:AddSlider(TabAim, "Hitbox Alpha", "0-10", 0, 10, 3, function(v) hitboxAlpha = v/10 end, "HitboxAlpha", true)
+Window:AddButton(TabAim, "Reset Hitbox", "Kembalikan ukuran asli", function()
+    stopHitboxLoop()
+    hitboxEnabled = false
+    task.wait(0.3)
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local parts = getHitboxParts(player.Character)
+            for _, part in ipairs(parts) do
+                pcall(function() restoreOriginalSize(part) end)
+            end
+        end
+    end
+    Window:Notify({ Title = "Hitbox Reset", Description = "Hitbox dikembalikan ke default", Color = Color3.fromRGB(255,255,0), Delay = 2 })
+end, "ResetHitboxBtn")
+
+-- Fungsi Hitbox
+local function getHitboxParts(character)
+    local parts = {}
+    if not character then return parts end
+    local target = hitboxTarget
+    if target == "All" or target == "Head" then
+        local head = character:FindFirstChild("Head")
+        if head then table.insert(parts, head) end
+        local headHB = character:FindFirstChild("HeadHB")
+        if headHB then table.insert(parts, headHB) end
+    end
+    if target == "All" or target == "Torso" then
+        local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+        if torso then table.insert(parts, torso) end
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if hrp then table.insert(parts, hrp) end
+    end
+    if target == "All" or target == "Legs" then
+        for _, name in pairs({"RightUpperLeg","LeftUpperLeg","RightLowerLeg","LeftLowerLeg"}) do
+            local leg = character:FindFirstChild(name)
+            if leg then table.insert(parts, leg) end
+        end
+    end
+    return parts
+end
+
+local function saveOriginalSize(part)
+    if not part then return end
+    local key = tostring(part)
+    if not originalSizes[key] then
+        originalSizes[key] = {
+            Size = part.Size,
+            Transparency = part.Transparency,
+            CanCollide = part.CanCollide
+        }
+    end
+end
+
+local function restoreOriginalSize(part)
+    if not part then return end
+    local key = tostring(part)
+    local original = originalSizes[key]
+    if original then
+        pcall(function()
+            part.Size = original.Size
+            part.Transparency = original.Transparency
+            part.CanCollide = original.CanCollide
+        end)
+        originalSizes[key] = nil
+    end
+end
+
+local function hitboxLoop()
+    while hitboxLoopRunning and not hitboxLoopStop do
+        if hitboxEnabled then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local parts = getHitboxParts(player.Character)
+                    for _, part in ipairs(parts) do
+                        pcall(function()
+                            saveOriginalSize(part)
+                            part.Transparency = hitboxAlpha
+                            part.CanCollide = false
+                            part.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+                        end)
+                    end
+                end
+            end
+        else
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local parts = getHitboxParts(player.Character)
+                    for _, part in ipairs(parts) do
+                        pcall(function() restoreOriginalSize(part) end)
+                    end
+                end
+            end
+        end
+        task.wait(0.3)
+    end
+    -- Cleanup
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local parts = getHitboxParts(player.Character)
+            for _, part in ipairs(parts) do
+                pcall(function() restoreOriginalSize(part) end)
+            end
+        end
+    end
+end
+
+local function startHitboxLoop()
+    if hitboxLoopRunning then return end
+    hitboxLoopRunning = true
+    hitboxLoopStop = false
+    task.spawn(hitboxLoop)
+end
+
+local function stopHitboxLoop()
+    hitboxLoopStop = true
+    task.wait(0.4)
+    hitboxLoopRunning = false
+end
+
 -- ============================================================
 -- TAB: VISUAL
 -- ============================================================
@@ -144,7 +293,6 @@ Window:AddParagraph(TabVis, "ESP", "Player highlights + Billboard")
 local espEnabled = false
 Window:AddToggle(TabVis, "Enable ESP", "Show ESP", false, function(v) espEnabled = v; refreshESP() end, "ESPToggle")
 
--- ESP data
 local espData = {}
 local ESPFolder = Instance.new("Folder")
 ESPFolder.Name = "ESP_Holder"
@@ -262,7 +410,6 @@ Players.PlayerRemoving:Connect(function(p)
     end
 end)
 
--- Update jarak
 RunService.Heartbeat:Connect(function()
     local myChar = LocalPlayer.Character
     local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
@@ -500,7 +647,6 @@ RunService.RenderStepped:Connect(function(dt)
     if not aimbotEnabled then return end
     local myChar = LocalPlayer.Character
     if not myChar then return end
-    -- Deteksi Sheriff
     local hasGun = false
     for _, tool in ipairs(myChar:GetChildren()) do
         if tool:IsA("Tool") and (tool.Name:lower():find("gun") or tool.Name:lower():find("revolver") or tool.Name:lower():find("pistol") or tool.Name:lower():find("sheriff")) then
@@ -840,5 +986,16 @@ task.spawn(function()
         task.wait(0.1)
     end
 end)
+
+-- ============================================================
+-- NOTIFIKASI SELESAI
+-- ============================================================
+Window:Notify({
+    Title = "W424HUB",
+    Description = "Semua fitur siap digunakan!",
+    Content = "Aimbot | Silent Aim | ESP | Hitbox | Auto Tools",
+    Color = Color3.fromRGB(0, 255, 255),
+    Delay = 5
+})
 
 print("✅ W424HUB FULL loaded – All features ready!")
