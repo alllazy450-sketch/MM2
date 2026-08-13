@@ -1,7 +1,7 @@
 -- ============================================
--- MURDER MYSTERY 2 OP – MINIMAL (KAIRO UI)
+-- MURDER MYSTERY 2 OP – FINAL (NO LABEL)
 -- ============================================
-print("=== LOADING MM2 OP MINIMAL ===")
+print("=== LOADING MM2 OP FINAL ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -43,55 +43,13 @@ Window:Notify({
 })
 
 -- ============================================
--- TAB: ROLES & ESP (Tanpa Tombol)
+-- TAB: ROLES & ESP (Tanpa Label Dinamis)
 -- ============================================
 local TabRoles = Window:CreateTab("Roles & ESP")
 
--- Gun Drop Status
-Window:AddParagraph(TabRoles, "Gun Drop Status", "Auto-update")
-local gunLabel = Window:AddLabel(TabRoles, "Gun Drop Status: Unknown", "GunLabel")
-task.spawn(function()
-    while true do
-        local gunExists = Workspace:FindFirstChild("GunDrop")
-        if gunExists then
-            gunLabel:SetText("Gun Drop Status: Dropped ✔️")
-        else
-            gunLabel:SetText("Gun Drop Status: Not Dropped ❌")
-        end
-        task.wait(1)
-    end
-end)
+Window:AddParagraph(TabRoles, "ESP Billboard", "Toggle below to show players")
 
--- Role Detector
-Window:AddDivider(TabRoles, "Role Detector")
-local murdererLabel = Window:AddLabel(TabRoles, "Murderer: Unknown", "MurdererLabel")
-local sheriffLabel = Window:AddLabel(TabRoles, "Sheriff: Unknown", "SheriffLabel")
-
-task.spawn(function()
-    while true do
-        local players = Players:GetPlayers()
-        local murderer, sheriff = "Unknown", "Unknown"
-        for _, player in ipairs(players) do
-            if player.Character then
-                local backpack = player.Backpack
-                if backpack then
-                    for _, tool in ipairs(backpack:GetChildren()) do
-                        if tool:IsA("Tool") then
-                            if tool.Name == "Knife" then murderer = player.Name
-                            elseif tool.Name == "Gun" then sheriff = player.Name end
-                        end
-                    end
-                end
-            end
-        end
-        murdererLabel:SetText("Murderer: " .. murderer)
-        sheriffLabel:SetText("Sheriff: " .. sheriff)
-        task.wait(1)
-    end
-end)
-
--- ESP Billboard
-Window:AddDivider(TabRoles, "ESP (Billboard)")
+-- ESP Folder
 local ESPFolder = Instance.new("Folder")
 ESPFolder.Name = "ESP_Holder"
 ESPFolder.Parent = CoreGui
@@ -159,7 +117,6 @@ Players.PlayerRemoving:Connect(function(player)
     if bill then bill:Destroy() end
 end)
 
--- ESP Toggles (tanpa tombol)
 Window:AddToggle(TabRoles, "All ESP", "Show every player (green)", false, function(v)
     getgenv().AllEsp = v
     if v then
@@ -183,7 +140,7 @@ Window:AddToggle(TabRoles, "Sheriff ESP", "Show sheriff (blue)", false, function
 end, "SheriffESPToggle")
 
 -- ============================================
--- TAB: AIM (Aimbot + Murderer Tools)
+-- TAB: AIM
 -- ============================================
 local TabAim = Window:CreateTab("Aim")
 Window:AddParagraph(TabAim, "Sheriff Aimbot", "For Sheriff (Gun)")
@@ -267,7 +224,7 @@ Window:AddToggle(TabAim, "Auto Melee", "Attack nearby enemies with knife", false
 Window:AddSlider(TabAim, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) meleeRadius = v end, "MeleeRadius", true)
 
 -- ============================================
--- FUNGSI UTAMA (SAMA)
+-- FUNGSI UTAMA
 -- ============================================
 local function isMurderer(player)
     if not player then return false end
@@ -571,4 +528,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ MM2 OP Hub (MINIMAL) loaded – No buttons, only ESP + Aimbot + Auto Tools.")
+print("✅ MM2 OP Hub FINAL loaded – No AddLabel, no buttons, only ESP + Aimbot + Auto Tools.")
