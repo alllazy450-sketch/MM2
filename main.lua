@@ -1,14 +1,12 @@
 -- ============================================================
--- W424HUB – FULL SCRIPT MM2
+-- W424HUB – FULL SCRIPT (STABLE, NO HOOK)
 -- ============================================================
-print("=== LOADING W424HUB FULL ===")
+print("=== LOADING W424HUB STABLE ===")
 
--- Load Kairo UI dengan error handling
+-- Load Kairo UI
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
-    warn("❌ Kairo gagal di-load! Membuat UI manual...")
-    -- Fallback UI sederhana (tapi tetap pakai Kairo jika mungkin)
-    -- Kita akan buat UI manual nanti, tapi lebih baik berhenti jika Kairo gagal
+    warn("❌ Kairo gagal di-load!")
     return
 end
 
@@ -34,7 +32,7 @@ local Window = Kairo:CreateWindow({
     Center = true,
     Draggable = true,
     Resize = false,
-    Badges = {"v1.0"},
+    Badges = {"v3.0"},
     MinimizeKey = Enum.KeyCode.RightShift,
     MinimizeButton = true,
     Config = { Enabled = true, Folder = "W424HUB_Config", AutoLoad = true }
@@ -45,17 +43,70 @@ if not Window then return end
 Window:Notify({
     Title = "W424HUB",
     Description = "Loaded successfully!",
-    Content = "Aimbot + Silent Aim + ESP + Hitbox Expansion",
+    Content = "Aimbot + ESP + Hitbox Expansion",
     Color = Color3.fromRGB(0, 200, 50),
     Delay = 3
 })
+
+-- ============================================================
+-- FUNGSI GET ROLE (untuk ESP dan target filter)
+-- ============================================================
+local function getRole(player)
+    if not player or not player.Character then return "Innocent" end
+    local hasKnife = false
+    local hasGun = false
+    local backpack = player:FindFirstChild("Backpack")
+    if backpack then
+        for _, tool in ipairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") then
+                local name = tool.Name:lower()
+                if name:find("knife") or name:find("murderer") or name:find("blade") then hasKnife = true end
+                if name:find("gun") or name:find("revolver") or name:find("sheriff") or name:find("pistol") then hasGun = true end
+            end
+        end
+    end
+    local charTool = player.Character:FindFirstChildOfClass("Tool")
+    if charTool then
+        local name = charTool.Name:lower()
+        if name:find("knife") or name:find("murderer") or name:find("blade") then hasKnife = true end
+        if name:find("gun") or name:find("revolver") or name:find("sheriff") or name:find("pistol") then hasGun = true end
+    end
+    if hasKnife then return "Murderer" end
+    if hasGun then return "Sheriff" end
+    return "Innocent"
+end
+
+-- ============================================================
+-- HELPER FUNCTIONS (Aimbot & Tools)
+-- ============================================================
+local function CharacterRayOrigin(char)
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    return (hrp.CFrame * CFrame.new(0,0,hrp.Size.Z/2)).Position
+end
+
+local function hasClearLOS(fromPos, toPos, myChar, targetChar)
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {myChar, targetChar}
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    local result = Workspace:Raycast(fromPos, (toPos - fromPos), params)
+    if result then
+        if not result.Instance:IsDescendantOf(targetChar) then return false end
+    end
+    return true
+end
+
+local function isShooting()
+    return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or
+           UserInputService:IsMouseButtonPressed(Enum.UserInputType.Touch)
+end
 
 -- ============================================================
 -- TAB: AIM
 -- ============================================================
 local TabAim = Window:CreateTab("Aim")
 
--- ===== SECTION: AIMBOT (CAMERA) =====
+-- ===== AIMBOT (CAMERA) =====
 Window:AddParagraph(TabAim, "Aimbot (Camera)", "Menggerakkan kamera ke target")
 
 local aimbotEnabled = false
@@ -84,243 +135,179 @@ Window:AddToggle(TabAim, "Auto Shoot", "Shoot automatically", false, function(v)
 Window:AddSlider(TabAim, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) aimAutoDelay = v/100 end, "AimAutoDelay", true)
 Window:AddDropdown(TabAim, "Target Part", "Body part", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) aimTargetPart = v end, "AimPart")
 
--- ===== SECTION: SILENT AIM (Hook Remote) =====
-Window:AddDivider(TabAim, "Silent Aim (Stealth)")
-local silentEnabled = false
-local silentTargetMode = "Murderer Only"
-local silentTargetPart = "Head"
-local silentFOV = 180
-local silentMaxDist = 300
-local silentPrediction = true
-local silentPredFactor = 0.15
-local silentVis = true
-local silentAutoShoot = false
-local silentAutoDelay = 0.1
-local lastSilentShot = 0
-local shootRemote = nil
+-- ===== HITBOX EXPANSION =====
+Window:AddDivider(TabAim, "Hitbox Expansion")
+local hitboxEnabled = false
+local hitboxSize = 15
+local hitboxAlpha = 0.3
+local hitboxTarget = "All"
+local hitboxLoopRunning = false
+local hitboxLoopStop = false
+local originalSizes = {}
 
--- Cari remote ShootGun
-local function getShootRemote()
-    if shootRemote and shootRemote.Parent then return shootRemote end
-    shootRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ShootGun")
-    if not shootRemote then
-        shootRemote = ReplicatedStorage:FindFirstChild("ShootGun")
+Window:AddToggle(TabAim, "Enable Hitbox Expansion", "Perbesar hitbox musuh", false, function(v)
+    hitboxEnabled = v
+    if v then startHitboxLoop() else stopHitboxLoop() end
+end, "HitboxToggle")
+
+Window:AddDropdown(TabAim, "Hitbox Target Parts", "Pilih bagian tubuh", {"All","Head","Torso","Legs"}, false, "All", function(v)
+    hitboxTarget = v
+    if hitboxEnabled then
+        stopHitboxLoop()
+        task.wait(0.2)
+        startHitboxLoop()
     end
-    return shootRemote
-end
+end, "HitboxTarget")
 
--- Hook ShootGun remote (tanpa hookmetamethod)
-local function hookShootRemote()
-    local remote = getShootRemote()
-    if not remote then return end
-
-    -- Simpan fungsi asli
-    local originalFire = remote.FireServer
-    if not originalFire then return end
-
-    -- Override FireServer
-    remote.FireServer = function(self, ...)
-        if silentEnabled then
-            local args = {...}
-            local myChar = LocalPlayer.Character
-            if myChar then
-                -- Cek apakah memegang Gun (Sheriff)
-                local hasGun = false
-                for _, tool in ipairs(myChar:GetChildren()) do
-                    if tool:IsA("Tool") and (tool.Name:lower():find("gun") or tool.Name:lower():find("revolver") or tool.Name:lower():find("pistol") or tool.Name:lower():find("sheriff")) then
-                        hasGun = true
-                        break
-                    end
-                end
-                if hasGun then
-                    -- Dapatkan target
-                    local targetPart = GetClosestSilentTarget()
-                    if targetPart and #args >= 4 then
-                        local origin = args[1]
-                        if origin and typeof(origin) == "Vector3" then
-                            local newTargetPos = targetPart.Position
-                            args[2] = newTargetPos
-                            args[3] = targetPart
-                            args[4] = newTargetPos
-                            return originalFire(self, unpack(args))
-                        end
-                    end
-                end
-            end
-        end
-        return originalFire(self, ...)
-    end
-end
-
--- Panggil hook setelah game siap
-task.spawn(function()
-    task.wait(0.5)
-    hookShootRemote()
-end)
-
--- ============================================================
--- FUNGSI SILENT AIM
--- ============================================================
-local rayParams = RaycastParams.new()
-rayParams.FilterType = Enum.RaycastFilterType.Exclude
-
-local function IsVisibleSilent(targetPart)
-    if not silentVis then return true end
-    local myChar = LocalPlayer.Character
-    if not myChar then return false end
-    local rootPart = myChar:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return false end
-    rayParams.FilterDescendantsInstances = {myChar}
-    local result = Workspace:Raycast(rootPart.Position, targetPart.Position - rootPart.Position, rayParams)
-    if result then
-        return result.Instance:IsDescendantOf(targetPart.Parent)
-    end
-    return true
-end
-
-local function getRoleSilent(player)
-    if not player or not player.Character then return "Innocent" end
-    local hasKnife = false
-    local hasGun = false
-    local backpack = player:FindFirstChild("Backpack")
-    if backpack then
-        for _, tool in ipairs(backpack:GetChildren()) do
-            if tool:IsA("Tool") then
-                local name = tool.Name:lower()
-                if name:find("knife") or name:find("murderer") or name:find("blade") then hasKnife = true end
-                if name:find("gun") or name:find("revolver") or name:find("sheriff") or name:find("pistol") then hasGun = true end
-            end
-        end
-    end
-    local charTool = player.Character:FindFirstChildOfClass("Tool")
-    if charTool then
-        local name = charTool.Name:lower()
-        if name:find("knife") or name:find("murderer") or name:find("blade") then hasKnife = true end
-        if name:find("gun") or name:find("revolver") or name:find("sheriff") or name:find("pistol") then hasGun = true end
-    end
-    if hasKnife then return "Murderer" end
-    if hasGun then return "Sheriff" end
-    return "Innocent"
-end
-
-local function GetClosestSilentTarget()
-    local center = Camera.ViewportSize / 2
-    local closest = nil
-    local closestDist = silentFOV
-    local myChar = LocalPlayer.Character
-    if not myChar then return nil end
-    local myRoot = myChar:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return nil end
-    local myPos = myRoot.Position
-
+Window:AddSlider(TabAim, "Hitbox Size", "1-30", 1, 30, 15, function(v) hitboxSize = v end, "HitboxSize", true)
+Window:AddSlider(TabAim, "Hitbox Alpha", "0-10", 0, 10, 3, function(v) hitboxAlpha = v/10 end, "HitboxAlpha", true)
+Window:AddButton(TabAim, "Reset Hitbox", "Kembalikan ukuran asli", function()
+    stopHitboxLoop()
+    hitboxEnabled = false
+    task.wait(0.3)
     for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then continue end
-        local char = player.Character
-        if not char then continue end
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hum or hum.Health <= 0 then continue end
-        local role = getRoleSilent(player)
-        if silentTargetMode == "Murderer Only" and role ~= "Murderer" then continue end
-        local part = char:FindFirstChild(silentTargetPart) or char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
-        if not part then continue end
-        local targetPos = part.Position
-        if silentPrediction then
-            local vel = part.Velocity or Vector3.new()
-            targetPos = targetPos + (vel * silentPredFactor)
-        end
-        local dist = (targetPos - myPos).Magnitude
-        if dist > silentMaxDist then continue end
-        if not IsVisibleSilent(part) then continue end
-        local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
-        if onScreen then
-            local screenDist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-            if screenDist < closestDist then
-                closestDist = screenDist
-                closest = part
+        if player ~= LocalPlayer and player.Character then
+            local parts = getHitboxParts(player.Character)
+            for _, part in ipairs(parts) do
+                pcall(function() restoreOriginalSize(part) end)
             end
         end
     end
-    return closest
-end
+    Window:Notify({ Title = "Hitbox Reset", Description = "Hitbox dikembalikan ke default", Color = Color3.fromRGB(255,255,0), Delay = 2 })
+end, "ResetHitboxBtn")
 
--- Silent Auto Shoot loop
-RunService.RenderStepped:Connect(function()
-    if not silentEnabled or not silentAutoShoot then return end
-    local now = tick()
-    if now - lastSilentShot < silentAutoDelay then return end
-    local myChar = LocalPlayer.Character
-    if not myChar then return end
-    local hasGun = false
-    for _, tool in ipairs(myChar:GetChildren()) do
-        if tool:IsA("Tool") and (tool.Name:lower():find("gun") or tool.Name:lower():find("revolver") or tool.Name:lower():find("pistol") or tool.Name:lower():find("sheriff")) then
-            hasGun = true
-            break
+-- Fungsi Hitbox
+local function getHitboxParts(character)
+    local parts = {}
+    if not character then return parts end
+    local target = hitboxTarget
+    if target == "All" or target == "Head" then
+        local head = character:FindFirstChild("Head")
+        if head then table.insert(parts, head) end
+        local headHB = character:FindFirstChild("HeadHB")
+        if headHB then table.insert(parts, headHB) end
+    end
+    if target == "All" or target == "Torso" then
+        local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+        if torso then table.insert(parts, torso) end
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if hrp then table.insert(parts, hrp) end
+    end
+    if target == "All" or target == "Legs" then
+        for _, name in pairs({"RightUpperLeg","LeftUpperLeg","RightLowerLeg","LeftLowerLeg"}) do
+            local leg = character:FindFirstChild(name)
+            if leg then table.insert(parts, leg) end
         end
     end
-    if not hasGun then return end
-    local targetPart = GetClosestSilentTarget()
-    if not targetPart then return end
-    local center = Camera.ViewportSize / 2
-    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
-    if onScreen then
-        local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-        if dist > silentFOV then return end
-    else return end
-    local remote = getShootRemote()
-    if remote then
-        local origin = Camera.CFrame.Position
-        local targetPos = targetPart.Position
+    return parts
+end
+
+local function saveOriginalSize(part)
+    if not part then return end
+    local key = tostring(part)
+    if not originalSizes[key] then
+        originalSizes[key] = {
+            Size = part.Size,
+            Transparency = part.Transparency,
+            CanCollide = part.CanCollide
+        }
+    end
+end
+
+local function restoreOriginalSize(part)
+    if not part then return end
+    local key = tostring(part)
+    local original = originalSizes[key]
+    if original then
         pcall(function()
-            remote:FireServer(origin, targetPos, targetPart, targetPos)
-            local tool = myChar:FindFirstChildOfClass("Tool")
-            if tool and tool:FindFirstChild("Fire") then tool.Fire:Play() end
-            lastSilentShot = tick()
+            part.Size = original.Size
+            part.Transparency = original.Transparency
+            part.CanCollide = original.CanCollide
         end)
+        originalSizes[key] = nil
     end
-end)
+end
 
--- UI Silent Aim
-Window:AddToggle(TabAim, "Enable Silent Aim", "Redirect bullets without moving camera", false, function(v) silentEnabled = v end, "SilentToggle")
-Window:AddDropdown(TabAim, "Silent Target", "Who to target", {"Murderer Only","All Players"}, false, "Murderer Only", function(v) silentTargetMode = v end, "SilentTarget")
-Window:AddDropdown(TabAim, "Silent Part", "Body part", {"Head","HumanoidRootPart","Torso"}, false, "Head", function(v) silentTargetPart = v end, "SilentPart")
-Window:AddSlider(TabAim, "Silent FOV", "30-400", 30, 400, 180, function(v) silentFOV = v end, "SilentFOV", true)
-Window:AddSlider(TabAim, "Silent Max Dist", "50-500", 50, 500, 300, function(v) silentMaxDist = v end, "SilentDist", true)
-Window:AddToggle(TabAim, "Silent Prediction", "Aim ahead", true, function(v) silentPrediction = v end, "SilentPred")
-Window:AddSlider(TabAim, "Silent Pred Factor", "0-100", 0, 100, 15, function(v) silentPredFactor = v/100 end, "SilentPredFactor", true)
-Window:AddToggle(TabAim, "Silent Vis Check", "Don't shoot through walls", true, function(v) silentVis = v end, "SilentVis")
-Window:AddToggle(TabAim, "Silent Auto Shoot", "Shoot automatically", false, function(v) silentAutoShoot = v end, "SilentAuto")
-Window:AddSlider(TabAim, "Silent Auto Delay", "0.05-0.5s", 5, 50, 10, function(v) silentAutoDelay = v/100 end, "SilentAutoDelay", true)
-
--- ============================================================
--- FUNGSI GET ROLE (untuk ESP dan Murderer Tools)
--- ============================================================
-local function getRole(player)
-    if not player or not player.Character then return "Innocent" end
-    local hasKnife = false
-    local hasGun = false
-    local backpack = player:FindFirstChild("Backpack")
-    if backpack then
-        for _, tool in ipairs(backpack:GetChildren()) do
-            if tool:IsA("Tool") then
-                local name = tool.Name:lower()
-                if name:find("knife") or name:find("murderer") or name:find("blade") then hasKnife = true end
-                if name:find("gun") or name:find("revolver") or name:find("sheriff") or name:find("pistol") then hasGun = true end
+local function hitboxLoop()
+    while hitboxLoopRunning and not hitboxLoopStop do
+        if hitboxEnabled then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local parts = getHitboxParts(player.Character)
+                    for _, part in ipairs(parts) do
+                        pcall(function()
+                            saveOriginalSize(part)
+                            part.Transparency = hitboxAlpha
+                            part.CanCollide = false
+                            part.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+                        end)
+                    end
+                end
+            end
+        else
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local parts = getHitboxParts(player.Character)
+                    for _, part in ipairs(parts) do
+                        pcall(function() restoreOriginalSize(part) end)
+                    end
+                end
+            end
+        end
+        task.wait(0.3)
+    end
+    -- Cleanup
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local parts = getHitboxParts(player.Character)
+            for _, part in ipairs(parts) do
+                pcall(function() restoreOriginalSize(part) end)
             end
         end
     end
-    local charTool = player.Character:FindFirstChildOfClass("Tool")
-    if charTool then
-        local name = charTool.Name:lower()
-        if name:find("knife") or name:find("murderer") or name:find("blade") then hasKnife = true end
-        if name:find("gun") or name:find("revolver") or name:find("sheriff") or name:find("pistol") then hasGun = true end
-    end
-    if hasKnife then return "Murderer" end
-    if hasGun then return "Sheriff" end
-    return "Innocent"
 end
 
+local function startHitboxLoop()
+    if hitboxLoopRunning then return end
+    hitboxLoopRunning = true
+    hitboxLoopStop = false
+    task.spawn(hitboxLoop)
+end
+
+local function stopHitboxLoop()
+    hitboxLoopStop = true
+    task.wait(0.4)
+    hitboxLoopRunning = false
+end
+
+-- ===== MURDERER TOOLS =====
+Window:AddDivider(TabAim, "Murderer Tools")
+local murdererThrow = false
+local murdererThrowTarget = "All Players"
+local murdererThrowDist = 300
+local murdererThrowCD = 2
+local murdererThrowPred = false
+local murdererThrowPredFactor = 0.2
+local murdererThrowWall = true
+local murdererAutoEquip = false
+local murdererMelee = false
+local murdererMeleeRadius = 10
+local lastThrowTime = 0
+
+Window:AddToggle(TabAim, "Auto Throw Knife", "Throw knife automatically", false, function(v) murdererThrow = v end, "ThrowToggle")
+Window:AddDropdown(TabAim, "Throw Target", "Target", {"All Players","Sheriff Only","Innocent Only"}, false, "All Players", function(v) murdererThrowTarget = v end, "ThrowTarget")
+Window:AddSlider(TabAim, "Throw Max Dist", "50-500", 50, 500, 300, function(v) murdererThrowDist = v end, "ThrowDist", true)
+Window:AddSlider(TabAim, "Throw Cooldown", "0.5-10s", 0.5, 10, 2, function(v) murdererThrowCD = v end, "ThrowCD", true)
+Window:AddToggle(TabAim, "Throw Prediction", "Aim ahead", false, function(v) murdererThrowPred = v end, "ThrowPred")
+Window:AddSlider(TabAim, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) murdererThrowPredFactor = v/100 end, "ThrowPredFactor", true)
+Window:AddToggle(TabAim, "Throw Wall Check", "Don't throw through walls", true, function(v) murdererThrowWall = v end, "ThrowWall")
+Window:AddToggle(TabAim, "Auto Equip Knife", "Equip knife automatically", false, function(v) murdererAutoEquip = v end, "AutoEquip")
+Window:AddDivider(TabAim, "Auto Melee")
+Window:AddToggle(TabAim, "Auto Melee", "Attack nearby enemies", false, function(v) murdererMelee = v end, "MeleeToggle")
+Window:AddSlider(TabAim, "Melee Radius", "3-30", 3, 30, 10, function(v) murdererMeleeRadius = v end, "MeleeRadius", true)
+
 -- ============================================================
--- TAB: VISUAL (ESP, LINE, FOV)
+-- TAB: VISUAL
 -- ============================================================
 local TabVis = Window:CreateTab("Visual")
 
@@ -595,205 +582,8 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ============================================================
--- TAB: AIM (LANJUTAN) - HITBOX EXPANSION & MURDERER TOOLS
+-- FUNGSI AIMBOT
 -- ============================================================
-
--- ===== HITBOX EXPANSION =====
-Window:AddDivider(TabAim, "Hitbox Expansion")
-local hitboxEnabled = false
-local hitboxSize = 15
-local hitboxAlpha = 0.3
-local hitboxTarget = "All"
-local hitboxLoopRunning = false
-local hitboxLoopStop = false
-local originalSizes = {}
-
-Window:AddToggle(TabAim, "Enable Hitbox Expansion", "Perbesar hitbox musuh", false, function(v)
-    hitboxEnabled = v
-    if v then
-        startHitboxLoop()
-    else
-        stopHitboxLoop()
-    end
-end, "HitboxToggle")
-
-Window:AddDropdown(TabAim, "Hitbox Target Parts", "Pilih bagian tubuh", {"All","Head","Torso","Legs"}, false, "All", function(v)
-    hitboxTarget = v
-    if hitboxEnabled then
-        stopHitboxLoop()
-        task.wait(0.2)
-        startHitboxLoop()
-    end
-end, "HitboxTarget")
-
-Window:AddSlider(TabAim, "Hitbox Size", "1-30", 1, 30, 15, function(v) hitboxSize = v end, "HitboxSize", true)
-Window:AddSlider(TabAim, "Hitbox Alpha", "0-10", 0, 10, 3, function(v) hitboxAlpha = v/10 end, "HitboxAlpha", true)
-Window:AddButton(TabAim, "Reset Hitbox", "Kembalikan ukuran asli", function()
-    stopHitboxLoop()
-    hitboxEnabled = false
-    task.wait(0.3)
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local parts = getHitboxParts(player.Character)
-            for _, part in ipairs(parts) do
-                pcall(function() restoreOriginalSize(part) end)
-            end
-        end
-    end
-    Window:Notify({ Title = "Hitbox Reset", Description = "Hitbox dikembalikan ke default", Color = Color3.fromRGB(255,255,0), Delay = 2 })
-end, "ResetHitboxBtn")
-
--- Fungsi Hitbox
-local function getHitboxParts(character)
-    local parts = {}
-    if not character then return parts end
-    local target = hitboxTarget
-    if target == "All" or target == "Head" then
-        local head = character:FindFirstChild("Head")
-        if head then table.insert(parts, head) end
-        local headHB = character:FindFirstChild("HeadHB")
-        if headHB then table.insert(parts, headHB) end
-    end
-    if target == "All" or target == "Torso" then
-        local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
-        if torso then table.insert(parts, torso) end
-        local hrp = character:FindFirstChild("HumanoidRootPart")
-        if hrp then table.insert(parts, hrp) end
-    end
-    if target == "All" or target == "Legs" then
-        for _, name in pairs({"RightUpperLeg","LeftUpperLeg","RightLowerLeg","LeftLowerLeg"}) do
-            local leg = character:FindFirstChild(name)
-            if leg then table.insert(parts, leg) end
-        end
-    end
-    return parts
-end
-
-local function saveOriginalSize(part)
-    if not part then return end
-    local key = tostring(part)
-    if not originalSizes[key] then
-        originalSizes[key] = {
-            Size = part.Size,
-            Transparency = part.Transparency,
-            CanCollide = part.CanCollide
-        }
-    end
-end
-
-local function restoreOriginalSize(part)
-    if not part then return end
-    local key = tostring(part)
-    local original = originalSizes[key]
-    if original then
-        pcall(function()
-            part.Size = original.Size
-            part.Transparency = original.Transparency
-            part.CanCollide = original.CanCollide
-        end)
-        originalSizes[key] = nil
-    end
-end
-
-local function hitboxLoop()
-    while hitboxLoopRunning and not hitboxLoopStop do
-        if hitboxEnabled then
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character then
-                    local parts = getHitboxParts(player.Character)
-                    for _, part in ipairs(parts) do
-                        pcall(function()
-                            saveOriginalSize(part)
-                            part.Transparency = hitboxAlpha
-                            part.CanCollide = false
-                            part.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-                        end)
-                    end
-                end
-            end
-        else
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character then
-                    local parts = getHitboxParts(player.Character)
-                    for _, part in ipairs(parts) do
-                        pcall(function() restoreOriginalSize(part) end)
-                    end
-                end
-            end
-        end
-        task.wait(0.3)
-    end
-    -- Cleanup
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local parts = getHitboxParts(player.Character)
-            for _, part in ipairs(parts) do
-                pcall(function() restoreOriginalSize(part) end)
-            end
-        end
-    end
-end
-
-local function startHitboxLoop()
-    if hitboxLoopRunning then return end
-    hitboxLoopRunning = true
-    hitboxLoopStop = false
-    task.spawn(hitboxLoop)
-end
-
-local function stopHitboxLoop()
-    hitboxLoopStop = true
-    task.wait(0.4)
-    hitboxLoopRunning = false
-end
-
--- ===== MURDERER TOOLS =====
-Window:AddDivider(TabAim, "Murderer Tools")
-local murdererThrow = false
-local murdererThrowTarget = "All Players"
-local murdererThrowDist = 300
-local murdererThrowCD = 2
-local murdererThrowPred = false
-local murdererThrowPredFactor = 0.2
-local murdererThrowWall = true
-local murdererAutoEquip = false
-local murdererMelee = false
-local murdererMeleeRadius = 10
-local lastThrowTime = 0
-
-Window:AddToggle(TabAim, "Auto Throw Knife", "Throw knife automatically", false, function(v) murdererThrow = v end, "ThrowToggle")
-Window:AddDropdown(TabAim, "Throw Target", "Target", {"All Players","Sheriff Only","Innocent Only"}, false, "All Players", function(v) murdererThrowTarget = v end, "ThrowTarget")
-Window:AddSlider(TabAim, "Throw Max Dist", "50-500", 50, 500, 300, function(v) murdererThrowDist = v end, "ThrowDist", true)
-Window:AddSlider(TabAim, "Throw Cooldown", "0.5-10s", 0.5, 10, 2, function(v) murdererThrowCD = v end, "ThrowCD", true)
-Window:AddToggle(TabAim, "Throw Prediction", "Aim ahead", false, function(v) murdererThrowPred = v end, "ThrowPred")
-Window:AddSlider(TabAim, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) murdererThrowPredFactor = v/100 end, "ThrowPredFactor", true)
-Window:AddToggle(TabAim, "Throw Wall Check", "Don't throw through walls", true, function(v) murdererThrowWall = v end, "ThrowWall")
-Window:AddToggle(TabAim, "Auto Equip Knife", "Equip knife automatically", false, function(v) murdererAutoEquip = v end, "AutoEquip")
-Window:AddDivider(TabAim, "Auto Melee")
-Window:AddToggle(TabAim, "Auto Melee", "Attack nearby enemies", false, function(v) murdererMelee = v end, "MeleeToggle")
-Window:AddSlider(TabAim, "Melee Radius", "3-30", 3, 30, 10, function(v) murdererMeleeRadius = v end, "MeleeRadius", true)
-
--- ============================================================
--- FUNGSI UTAMA (AIMBOT)
--- ============================================================
-local function CharacterRayOrigin(char)
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-    return (hrp.CFrame * CFrame.new(0,0,hrp.Size.Z/2)).Position
-end
-
-local function hasClearLOS(fromPos, toPos, myChar, targetChar)
-    local params = RaycastParams.new()
-    params.FilterDescendantsInstances = {myChar, targetChar}
-    params.FilterType = Enum.RaycastFilterType.Exclude
-    local result = Workspace:Raycast(fromPos, (toPos - fromPos), params)
-    if result then
-        if not result.Instance:IsDescendantOf(targetChar) then return false end
-    end
-    return true
-end
-
--- ===== AIMBOT CAMERA =====
 local function getAimbotTargets()
     local targets = {}
     local myChar = LocalPlayer.Character
@@ -823,11 +613,6 @@ local function getAimbotTargets()
     end
     table.sort(targets, function(a,b) return a.Distance < b.Distance end)
     return targets
-end
-
-local function isShooting()
-    return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or
-           UserInputService:IsMouseButtonPressed(Enum.UserInputType.Touch)
 end
 
 RunService.RenderStepped:Connect(function(dt)
@@ -1042,9 +827,9 @@ end)
 Window:Notify({
     Title = "W424HUB",
     Description = "Semua fitur siap digunakan!",
-    Content = "Aimbot | Silent Aim | ESP | Hitbox | Auto Tools",
+    Content = "Aimbot | ESP | Hitbox | Auto Tools",
     Color = Color3.fromRGB(0, 255, 255),
     Delay = 5
 })
 
-print("✅ W424HUB FULL loaded – All features ready!")
+print("✅ W424HUB STABLE loaded – All features ready, no hooks!")
