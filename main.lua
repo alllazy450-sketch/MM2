@@ -1,11 +1,11 @@
 -- ============================================================
--- W424HUB --
+-- W424HUB 
 -- ============================================================
 print("=== LOADING W424HUB FULL ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
-    warn("❌ Kairo failed to load!")
+    warn("❌ Kairo gagal di-load!")
     return
 end
 
@@ -67,7 +67,6 @@ local aimPredFactor = 0.2
 local aimAutoShoot = false
 local aimAutoDelay = 0.1
 local aimTargetPart = "HumanoidRootPart"
-local aimTarget = nil
 
 Window:AddToggle(TabAim, "Aimbot", "Enable camera aimbot", false, function(v) aimbotEnabled = v end, "AimbotToggle")
 Window:AddDropdown(TabAim, "Trigger", "When to aim", {"On Shoot","Always"}, false, "On Shoot", function(v) aimTrigger = v end, "AimTrigger")
@@ -94,7 +93,6 @@ local silentPredFactor = 0.15
 local silentVis = true
 local silentAutoShoot = false
 local silentAutoDelay = 0.1
-local silentTarget = nil
 local lastSilentShot = 0
 
 Window:AddToggle(TabAim, "Enable Silent Aim", "Redirect bullets without moving camera", false, function(v) silentEnabled = v end, "SilentToggle")
@@ -490,13 +488,12 @@ end)
 
 -- ===== FOV CIRCLE =====
 Window:AddDivider(TabVis, "FOV Circle")
-local fovCircle = nil
 local fovGui = Instance.new("ScreenGui")
 fovGui.Name = "FOVCircleGUI"
 fovGui.Parent = CoreGui
 fovGui.ResetOnSpawn = false
 fovGui.IgnoreGuiInset = true
-fovCircle = Instance.new("Frame")
+local fovCircle = Instance.new("Frame")
 fovCircle.BackgroundTransparency = 1
 fovCircle.AnchorPoint = Vector2.new(0.5,0.5)
 fovCircle.Position = UDim2.new(0.5,0,0.5,0)
@@ -585,7 +582,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ============================================================
--- FUNGSI UTAMA (AIMBOT, SILENT AIM, MURDERER TOOLS)
+-- FUNGSI UTAMA (AIMBOT, MURDERER TOOLS)
 -- ============================================================
 
 -- Helper functions
@@ -761,42 +758,43 @@ local function GetShootRemote()
     return nil
 end
 
--- Hook Silent Aim (__namecall)
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    if method == "FireServer" and silentEnabled then
-        local remote = GetShootRemote()
-        if self == remote then
-            local args = {...}
-            local myChar = LocalPlayer.Character
-            if myChar then
-                local hasGun = false
-                for _, tool in ipairs(myChar:GetChildren()) do
-                    if tool:IsA("Tool") and (tool.Name:lower():find("gun") or tool.Name:lower():find("revolver") or tool.Name:lower():find("pistol") or tool.Name:lower():find("sheriff")) then
-                        hasGun = true; break
+-- Hook Silent Aim tanpa newcclosure (agar kompatibel)
+pcall(function()
+    local oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        if method == "FireServer" and silentEnabled then
+            local remote = GetShootRemote()
+            if self == remote then
+                local args = {...}
+                local myChar = LocalPlayer.Character
+                if myChar then
+                    local hasGun = false
+                    for _, tool in ipairs(myChar:GetChildren()) do
+                        if tool:IsA("Tool") and (tool.Name:lower():find("gun") or tool.Name:lower():find("revolver") or tool.Name:lower():find("pistol") or tool.Name:lower():find("sheriff")) then
+                            hasGun = true; break
+                        end
                     end
-                end
-                if hasGun then
-                    local targetPart = GetClosestSilentTarget()
-                    if targetPart then
-                        if #args >= 4 then
-                            local origin = args[1]
-                            if origin and typeof(origin) == "Vector3" then
-                                local newTargetPos = targetPart.Position
-                                args[2] = newTargetPos
-                                args[3] = targetPart
-                                args[4] = newTargetPos
-                                return oldNamecall(self, unpack(args))
+                    if hasGun then
+                        local targetPart = GetClosestSilentTarget()
+                        if targetPart then
+                            if #args >= 4 then
+                                local origin = args[1]
+                                if origin and typeof(origin) == "Vector3" then
+                                    local newTargetPos = targetPart.Position
+                                    args[2] = newTargetPos
+                                    args[3] = targetPart
+                                    args[4] = newTargetPos
+                                    return oldNamecall(self, unpack(args))
+                                end
                             end
                         end
                     end
                 end
             end
         end
-    end
-    return oldNamecall(self, ...)
-end))
+        return oldNamecall(self, ...)
+    end)
+end)
 
 -- Silent Auto Shoot
 RunService.RenderStepped:Connect(function(dt)
