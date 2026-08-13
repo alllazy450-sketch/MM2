@@ -19,7 +19,7 @@ local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 
 -- ============================================
--- WINDOW KAIRO (Tanpa Icon di Tab)
+-- WINDOW KAIRO
 -- ============================================
 local Window = Kairo:CreateWindow({
     Title = "MM2 OP Hub",
@@ -48,7 +48,7 @@ Window:Notify({
 })
 
 -- ============================================
--- TAB: TRADING (Hanya Title, tanpa Icon)
+-- TAB: TRADING
 -- ============================================
 local TabTrade = Window:CreateTab("Trading")
 Window:AddParagraph(TabTrade, "Trade Stuff", "Force trade with anyone")
@@ -58,6 +58,7 @@ Window:AddInput(TabTrade, "Player Name", "Enter player name...", "", function(v)
     playerNameTextbox = v
 end, "TradeInput")
 
+-- ADD BUTTON WITHOUT FLAG (4 params)
 Window:AddButton(TabTrade, "Force Trade", "Send trade request & accept", function()
     if playerNameTextbox and playerNameTextbox ~= "" then
         local player = Players:FindFirstChild(playerNameTextbox)
@@ -99,7 +100,7 @@ Window:AddButton(TabTrade, "Force Trade", "Send trade request & accept", functio
             Delay = 3
         })
     end
-end, "ForceTradeBtn")
+end)
 
 -- ============================================
 -- TAB: ROLES & ESP
@@ -130,7 +131,7 @@ Window:AddButton(TabRoles, "Chat Expose Roles", "Say who has knife/gun in chat",
         Color = Color3.fromRGB(0, 200, 255),
         Delay = 3
     })
-end, "ExposeRolesBtn")
+end)
 
 -- Gun Drop Status
 Window:AddDivider(TabRoles, "Gun Drop Status")
@@ -309,13 +310,11 @@ Window:AddToggle(TabRoles, "Sheriff ESP", "Show sheriff (blue)", false, function
 end, "SheriffESPToggle")
 
 -- ============================================
--- TAB: AIM (AIMBOT + MURDERER TOOLS)
+-- TAB: AIM
 -- ============================================
 local TabAim = Window:CreateTab("Aim")
-
 Window:AddParagraph(TabAim, "Sheriff Aimbot", "For Sheriff (Gun)")
 
--- Aimbot variables
 local aimbotEnabled = false
 local aimTrigger = "On Shoot"
 local targetMode = "Murderer Only"
@@ -330,7 +329,6 @@ local autoShootDelay = 0.1
 local targetPartName = "HumanoidRootPart"
 local fovCircleVisible = false
 
--- UI Aimbot
 Window:AddToggle(TabAim, "Aimbot", "Enable aimbot (Sheriff only)", false, function(v) aimbotEnabled = v end, "AimbotToggle")
 Window:AddDropdown(TabAim, "Trigger", "When to aim", {"On Shoot","Always"}, false, "On Shoot", function(v) aimTrigger = v end, "AimTriggerDrop")
 Window:AddDropdown(TabAim, "Target Mode", "Who to target", {"Murderer Only","All Players"}, false, "Murderer Only", function(v) targetMode = v end, "TargetModeDrop")
@@ -369,7 +367,7 @@ stroke.Thickness = 1.5
 local corner = Instance.new("UICorner", fovCircle)
 corner.CornerRadius = UDim.new(1, 0)
 
--- ===== MURDERER TOOLS =====
+-- Murderer Tools
 Window:AddDivider(TabAim, "Murderer Tools")
 local murdererAutoThrow = false
 local throwTargetMode = "All Players"
@@ -391,14 +389,12 @@ Window:AddToggle(TabAim, "Throw Prediction", "Aim ahead", false, function(v) thr
 Window:AddSlider(TabAim, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) throwPredFactor = v / 100 end, "ThrowPredFactor", true)
 Window:AddToggle(TabAim, "Throw Wall Check", "Don't throw through walls", true, function(v) throwVisibility = v end, "ThrowVis")
 Window:AddToggle(TabAim, "Auto Equip Knife", "Equip knife automatically", false, function(v) autoEquipKnife = v end, "AutoEquipKnife")
-
--- Auto Melee
 Window:AddDivider(TabAim, "Auto Melee Attack")
 Window:AddToggle(TabAim, "Auto Melee", "Attack nearby enemies with knife", false, function(v) autoMeleeEnabled = v end, "AutoMeleeToggle")
 Window:AddSlider(TabAim, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) meleeRadius = v end, "MeleeRadius", true)
 
 -- ============================================
--- FUNGSI-FUNGSI UTAMA (Sama seperti sebelumnya)
+-- FUNGSI UTAMA
 -- ============================================
 local function isMurderer(player)
     if not player then return false end
@@ -449,7 +445,6 @@ local function hasClearLOS(fromPos, toPos, myChar, targetChar)
     return true
 end
 
--- Aimbot getTargets
 local function getTargets()
     local targets = {}
     local myChar = LocalPlayer.Character
@@ -547,7 +542,6 @@ RunService.RenderStepped:Connect(function(dt)
         Camera.CFrame = targetCF
     end
 
-    -- Auto Shoot
     if autoShootEnabled and target then
         local center = Camera.ViewportSize / 2
         local pos, on = Camera:WorldToViewportPoint(target.Position)
@@ -569,7 +563,6 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
--- Auto Throw & Melee loop
 local function getThrowTargets()
     local targets = {}
     local char = LocalPlayer.Character
@@ -666,7 +659,6 @@ task.spawn(function()
             if not has then equipKnife(); task.wait(0.2) end
         end
 
-        -- Auto Melee
         if autoMeleeEnabled then
             local myRoot = char:FindFirstChild("HumanoidRootPart")
             if myRoot then
@@ -694,7 +686,6 @@ task.spawn(function()
             end
         end
 
-        -- Auto Throw
         if murdererAutoThrow and (tick() - lastThrowTime) >= throwCooldown then
             local targets = getThrowTargets()
             if #targets > 0 then
@@ -743,7 +734,7 @@ Window:AddButton(TabMisc, "Get Every Emote", "Add all free emotes", function()
             Delay = 3
         })
     end
-end, "GetEmotesBtn")
+end)
 
 Window:AddDivider(TabMisc, "Weapons")
 Window:AddButton(TabMisc, "Get Every Gun/Knife", "Attempt to unlock all weapons (client-side)", function()
@@ -771,6 +762,6 @@ Window:AddButton(TabMisc, "Get Every Gun/Knife", "Attempt to unlock all weapons 
     else
         Window:Notify({ Title = "Weapons", Description = "Failed: " .. tostring(result), Color = Color3.fromRGB(255,0,0), Delay = 5 })
     end
-end, "GetWeaponsBtn")
+end)
 
 print("✅ MM2 OP Hub LOADED!")
