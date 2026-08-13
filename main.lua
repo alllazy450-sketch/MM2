@@ -1,7 +1,7 @@
 -- ============================================
--- W424HUB – SHERIFF & MURDERER TABS
+-- W424HUB – TANPA BUBBLE (SHERIFF & MURDERER TABS)
 -- ============================================
-print("=== LOADING W424HUB SIMPLE ===")
+print("=== LOADING W424HUB NO BUBBLE ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -39,7 +39,7 @@ if not Window then return end
 Window:Notify({
     Title = "W424HUB",
     Description = "Loaded successfully!",
-    Content = "Sheriff & Murderer Tabs",
+    Content = "Sheriff & Murderer Tabs (No Bubble)",
     Color = Color3.fromRGB(0, 200, 50),
     Delay = 3
 })
@@ -94,10 +94,9 @@ local function hasClearLOS(fromPos, toPos, myChar, targetChar)
 end
 
 -- ============================================
--- TAB SHERIFF (AIMBOT)
+-- TAB SHERIFF
 -- ============================================
 local TabSheriff = Window:CreateTab("Sheriff")
-
 Window:AddParagraph(TabSheriff, "Sheriff Aimbot", "Aktif jika memegang Gun")
 
 -- Variabel Sheriff
@@ -129,10 +128,9 @@ Window:AddSlider(TabSheriff, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, functio
 Window:AddDropdown(TabSheriff, "Target Part", "Bagian tubuh", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) sheriffTargetPart = v end, "SheriffPart")
 
 -- ============================================
--- TAB MURDERER (AUTO THROW + AUTO MELEE)
+-- TAB MURDERER
 -- ============================================
 local TabMurderer = Window:CreateTab("Murderer")
-
 Window:AddParagraph(TabMurderer, "Murderer Tools", "Aktif jika memegang Knife")
 
 -- Variabel Murderer
@@ -166,7 +164,6 @@ Window:AddSlider(TabMurderer, "Melee Radius", "3-30 studs", 3, 30, 10, function(
 -- TAB VISUAL (ESP + FOV)
 -- ============================================
 local TabVisual = Window:CreateTab("Visual")
-
 Window:AddParagraph(TabVisual, "ESP & FOV", "Toggle visual")
 
 -- ESP
@@ -653,4 +650,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ W424HUB SIMPLE loaded – Sheriff & Murderer tabs ready!")
+print("✅ W424HUB NO BUBBLE loaded – Sheriff & Murderer tabs ready!")
