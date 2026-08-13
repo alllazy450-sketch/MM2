@@ -804,4 +804,4 @@ pcall(function()
     end
 end)
 
-print("✅ W424HUB FINAL loaded!")
+print("✅ W424HUB FINAL loaded – ESP auto-update role + Auto Shoot fix + WeaponService hook added!")
