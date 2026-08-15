@@ -1,7 +1,7 @@
 -- ============================================
--- W424HUB – FINAL (ESP AUTO UPDATE + AUTO SHOOT FIX)
+-- W424HUB – MM2
 -- ============================================
-print("=== LOADING W424HUB FINAL ===")
+print("=== LOADING W424HUB ===")
 
 local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
 if not Kairo then
@@ -29,7 +29,7 @@ local Window = Kairo:CreateWindow({
     Center = true,
     Draggable = true,
     Resize = false,
-    Badges = {"v3.0"},
+    Badges = {"v3.0 + Skins"},
     MinimizeKey = Enum.KeyCode.RightShift,
     MinimizeButton = true,
     Config = { Enabled = true, Folder = "W424HUB_Config", AutoLoad = true }
@@ -39,8 +39,8 @@ if not Window then return end
 
 Window:Notify({
     Title = "W424HUB",
-    Description = "Loaded successfully!",
-    Content = "Sheriff & Murderer Tabs",
+    Description = "Loaded with Skins feature!",
+    Content = "Unlock all skins & auto-apply",
     Color = Color3.fromRGB(0, 200, 50),
     Delay = 3
 })
@@ -54,7 +54,6 @@ local function getRole(player)
     local hasKnife = false
     local hasGun = false
 
-    -- Cek di backpack
     local backpack = player:FindFirstChild("Backpack")
     if backpack then
         for _, tool in ipairs(backpack:GetChildren()) do
@@ -70,7 +69,6 @@ local function getRole(player)
         end
     end
 
-    -- Cek tool yang sedang dipegang
     local charTool = player.Character:FindFirstChildOfClass("Tool")
     if charTool then
         local name = charTool.Name:lower()
@@ -338,7 +336,6 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Update jarak & role secara periodik (fix ESP role change)
 task.spawn(function()
     local lastRoles = {}
     while true do
@@ -355,7 +352,6 @@ task.spawn(function()
     end
 end)
 
--- Update jarak secara real-time
 RunService.Heartbeat:Connect(function()
     local myChar = LocalPlayer.Character
     local myPos = myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar.HumanoidRootPart.Position
@@ -482,7 +478,7 @@ local function getMurdererTargets()
 end
 
 -- ============================================
--- AIMBOT SHERIFF LOOP + AUTO SHOOT FIX
+-- AIMBOT SHERIFF LOOP + AUTO SHOOT
 -- ============================================
 local function isShooting()
     return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or
@@ -495,7 +491,6 @@ RunService.RenderStepped:Connect(function(dt)
     local myChar = LocalPlayer.Character
     if not myChar then return end
 
-    -- Cek apakah memegang Gun (Sheriff)
     local hasGun = false
     local gunTool = nil
     for _, tool in ipairs(myChar:GetChildren()) do
@@ -537,13 +532,11 @@ RunService.RenderStepped:Connect(function(dt)
         Camera.CFrame = targetCF
     end
 
-    -- AUTO SHOOT (FIX)
     if sheriffAutoShoot and target then
         local center = Camera.ViewportSize / 2
         local pos, on = Camera:WorldToViewportPoint(target.Position)
         if on then
             local crosshairDist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-            -- Ambang batas lebih longgar (30 pixel)
             if crosshairDist < 30 and (tick() - lastAutoShootTime) > sheriffAutoDelay then
                 lastAutoShootTime = tick()
                 pcall(function()
@@ -552,27 +545,19 @@ RunService.RenderStepped:Connect(function(dt)
                         local hitPart = target.Part
                         local targetPos2 = hitPart.Position
 
-                        -- Kirim remote tembak
                         local shootRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("ShootGun")
                         if shootRemote then
                             shootRemote:FireServer(origin, targetPos2, hitPart, targetPos2)
                         else
-                            -- Fallback: coba remote langsung
                             local remote = ReplicatedStorage:FindFirstChild("ShootGun")
                             if remote then
                                 remote:FireServer(origin, targetPos2, hitPart, targetPos2)
                             end
                         end
 
-                        -- Mainkan suara tembakan
                         if gunTool and gunTool:FindFirstChild("Fire") then
                             gunTool.Fire:Play()
                         end
-
-                        -- Simulasi klik mouse sebagai alternatif (jika remote gagal)
-                        -- VirtualInputManager:SendMouseButtonEvent(Enum.UserInputType.MouseButton1, 0, true, game, 0)
-                        -- task.wait(0.05)
-                        -- VirtualInputManager:SendMouseButtonEvent(Enum.UserInputType.MouseButton1, 0, false, game, 0)
                     end
                 end)
             end
@@ -725,4 +710,316 @@ task.spawn(function()
     end
 end)
 
-print("✅ W424HUB FINAL loaded")
+-- ============================================
+-- ============================================
+-- TAB SKINS (FIXED – TIDAK PAKAI AddButton & SetItems)
+-- ============================================
+local TabSkins = Window:CreateTab("Skins")
+Window:AddParagraph(TabSkins, "Unlock & Apply Skins", "MM2 only")
+
+-- Variabel skin
+local SkinData = nil
+local selectedKnife = "Default"
+local selectedGun = "Default"
+local autoApplySkin = false
+
+-- Fungsi load data
+local function loadSkinData()
+    if SkinData then return SkinData end
+
+    if isfile and isfile("mm2data.lua") then
+        local success, result = pcall(loadfile, "mm2data.lua")
+        if success and result then
+            SkinData = result()
+            if SkinData then return SkinData end
+        end
+    end
+
+    local success, result = pcall(function()
+        return game:HttpGet("https://raw.githubusercontent.com/Lutosys/opensrc/refs/heads/main/mm2meshes.lua")
+    end)
+
+    if success and result then
+        local func = loadstring(result)
+        if func then
+            SkinData = func()
+            if writefile then
+                pcall(function() writefile("mm2data.lua", result) end)
+            end
+            return SkinData
+        end
+    end
+
+    return nil
+end
+
+local function findMeshAndTexture(node)
+    if not node or type(node) ~= "table" then return nil end
+    local props = node.Props
+    if props then
+        local meshId = props.MeshId or props.MeshID
+        if meshId and meshId ~= "" then
+            return {
+                meshid = meshId,
+                textureid = props.TextureId or props.TextureID or "",
+                scale = props.Scale or Vector3.new(0.045,0.045,0.045),
+                size = props.Size or Vector3.new(0.045,0.045,0.045)
+            }
+        end
+    end
+    if node.Display and type(node.Display) == "table" then
+        for _, child in ipairs(node.Display) do
+            local res = findMeshAndTexture(child)
+            if res then return res end
+        end
+    end
+    return nil
+end
+
+local function getWeaponData(name)
+    if not SkinData then return nil end
+    local weapon = SkinData[name]
+    if not weapon then return nil end
+    return findMeshAndTexture(weapon)
+end
+
+local function applyWeaponMesh(refPart, weaponData, weaponName, weapontype)
+    if not weaponData or not weaponData.meshid then return end
+
+    local tool = refPart:FindFirstAncestorOfClass("Tool")
+    if tool then
+        if weapontype == "Gun" then
+            if weaponData.meshid:find("79401392") then
+                tool.Grip = CFrame.fromMatrix(
+                    Vector3.new(0, -0.699999988, -0.300000012),
+                    Vector3.new(1, 0, 0), 
+                    Vector3.new(0, 0, 1), 
+                    Vector3.new(0, -1, 0)
+                )
+            elseif weaponData.meshid:find("6600918074") then
+                tool.Grip = CFrame.new(1, -0.359999988, 0.00000012, 0, 0, 1, 0, 1, 0, -1, 0, 0)
+            else
+                tool.Grip = CFrame.fromMatrix(
+                    Vector3.new(0, -0.5, 0.7),
+                    Vector3.new(1, 0, 0),
+                    Vector3.new(0, 1, 0),
+                    Vector3.new(0, 0, 1)
+                )
+            end
+        end
+    end
+
+    if refPart:IsA("MeshPart") then
+        local specialMesh = refPart:FindFirstChildOfClass("SpecialMesh")
+        if specialMesh then specialMesh:Destroy() end
+        refPart.Size = weaponData.size
+        refPart.MeshId = weaponData.meshid
+        refPart.TextureID = weaponData.textureid
+    else
+        local mesh = refPart:FindFirstChildOfClass("SpecialMesh")
+        if not mesh then
+            mesh = Instance.new("SpecialMesh")
+            mesh.Name = "Mesh"
+            mesh.Parent = refPart
+        end
+        refPart.Size = weaponData.size
+        mesh.MeshId = weaponData.meshid
+        mesh.TextureId = weaponData.textureid
+        mesh.Scale = weaponData.scale
+    end
+end
+
+local function unlockAllSkins()
+    if not SkinData then
+        Window:Notify({Title="Error", Description="Data skin belum dimuat!", Color=Color3.new(1,0,0), Delay=3})
+        return
+    end
+
+    local success = pcall(function()
+        local InventoryModule = require(game.ReplicatedStorage.Modules.InventoryModule)
+        local ProfileData = require(game.ReplicatedStorage.Modules.ProfileData)
+        local Sync = require(game.ReplicatedStorage.Database.Sync)
+
+        for name, itemData in pairs(Sync.Weapons) do
+            itemData.SortWithinGroup = itemData.SortWithinGroup or 0
+            itemData.SortGroup = itemData.SortGroup or nil
+            itemData.Name = itemData.Name or itemData.ItemName or name
+            itemData.Rarity = itemData.Rarity or "Common"
+
+            if Sync.Rarities[itemData.Rarity] then
+                local weaponMeshInfo = getWeaponData(name)
+                if weaponMeshInfo and weaponMeshInfo.meshid then
+                    ProfileData.Weapons.Owned[name] = 1
+                end
+            end
+        end
+
+        local UpdateInventory = nil
+        for _, func in pairs(getgc()) do
+            if typeof(func) == "function" and islclosure(func) and debug.info(func, "l") == 122 and #debug.getupvalues(func) == 2 then
+                UpdateInventory = func
+                break
+            end
+        end
+        if UpdateInventory then
+            UpdateInventory(debug.getupvalue(UpdateInventory, 2), InventoryModule.MyInventory)
+        end
+    end)
+
+    if success then
+        Window:Notify({Title="Skins", Description="All skins unlocked!", Color=Color3.new(0,1,0), Delay=3})
+    else
+        Window:Notify({Title="Error", Description="Unlock failed!", Color=Color3.new(1,0,0), Delay=3})
+    end
+end
+
+-- Buat tombol unlock pakai AddToggle (sebagai trigger)
+Window:AddToggle(TabSkins, "Unlock All Skins", "Klik sekali untuk unlock semua skin (toggle)", false, function(v)
+    if v then
+        unlockAllSkins()
+        -- Matikan toggle agar bisa diklik lagi
+        -- Tapi karena tidak ada referensi, kita biarkan saja
+        Window:Notify({Title="Info", Description="Unlock diproses", Color=Color3.new(1,1,0), Delay=2})
+    end
+end)
+
+-- Variabel untuk dropdown (akan dibuat setelah data dimuat)
+local knifeDropdown = nil
+local gunDropdown = nil
+local dropdownCreated = false
+
+-- Fungsi membuat dropdown setelah data siap
+local function createSkinDropdowns()
+    if dropdownCreated then return end
+    if not SkinData then return end
+
+    local skinList = {}
+    for name, _ in pairs(SkinData) do
+        table.insert(skinList, name)
+    end
+    table.sort(skinList)
+    table.insert(skinList, 1, "Default") -- tambahkan opsi default di awal
+
+    -- Buat dropdown untuk knife
+    knifeDropdown = Window:AddDropdown(TabSkins, "Knife Skin", "Pilih skin untuk pisau", skinList, false, "Default", function(v)
+        selectedKnife = v
+        Window:Notify({Title="Knife", Description="Selected: "..v, Color=Color3.new(0,1,1), Delay=2})
+    end)
+
+    -- Buat dropdown untuk gun
+    gunDropdown = Window:AddDropdown(TabSkins, "Gun Skin", "Pilih skin untuk senjata", skinList, false, "Default", function(v)
+        selectedGun = v
+        Window:Notify({Title="Gun", Description="Selected: "..v, Color=Color3.new(0,1,1), Delay=2})
+    end)
+
+    dropdownCreated = true
+end
+
+-- Auto Apply toggle
+Window:AddToggle(TabSkins, "Auto Apply Skin", "Terapkan skin ke senjata yang dipegang", false, function(v)
+    autoApplySkin = v
+end)
+
+-- Load data skin di background
+task.spawn(function()
+    local data = loadSkinData()
+    if data then
+        SkinData = data
+        createSkinDropdowns()
+        Window:Notify({
+            Title = "Skins",
+            Description = "Data skin loaded!",
+            Content = "Available: " .. #SkinData .. " skins",
+            Color = Color3.fromRGB(0, 200, 200),
+            Delay = 3
+        })
+    else
+        Window:Notify({
+            Title = "Error",
+            Description = "Gagal memuat data skin!",
+            Content = "Periksa koneksi internet",
+            Color = Color3.fromRGB(255, 0, 0),
+            Delay = 3
+        })
+    end
+end)
+
+-- ============================================
+-- LOOP AUTO APPLY SKIN
+-- ============================================
+task.spawn(function()
+    while true do
+        if autoApplySkin and SkinData then
+            local char = LocalPlayer.Character
+            if char then
+                -- Ambil nama skin yang dipilih
+                local knifeName = (selectedKnife ~= "Default") and selectedKnife or nil
+                local gunName = (selectedGun ~= "Default") and selectedGun or nil
+
+                -- Terapkan ke tool
+                for _, tool in pairs(char:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        local itemType = tool:GetAttribute("ItemType")
+                        local Handle = tool:FindFirstChild("Handle")
+                        if Handle then
+                            if itemType == "Knife" and knifeName then
+                                local data = getWeaponData(knifeName)
+                                if data then applyWeaponMesh(Handle, data, knifeName, "Knife") end
+                            elseif itemType == "Gun" and gunName then
+                                local data = getWeaponData(gunName)
+                                if data then applyWeaponMesh(Handle, data, gunName, "Gun") end
+                            end
+                        end
+                    end
+                end
+
+                -- DisplayRef
+                local refGun = char:FindFirstChild("DisplayRefGun")
+                if refGun and refGun.Value and gunName then
+                    local data = getWeaponData(gunName)
+                    if data then applyWeaponMesh(refGun.Value, data, gunName) end
+                end
+
+                local refKnife = char:FindFirstChild("DisplayRefKnife")
+                if refKnife and refKnife.Value and knifeName then
+                    local data = getWeaponData(knifeName)
+                    if data then applyWeaponMesh(refKnife.Value, data, knifeName) end
+                end
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- ============================================
+-- HANDLER STUCK KNIFE
+-- ============================================
+Workspace.ChildAdded:Connect(function(ch)
+    if ch and ch:IsA("BasePart") and ch.Name == "StuckKnife" then
+        task.wait(0.1)
+        local mesh = ch:FindFirstChild("Mesh")
+        if mesh and SkinData then
+            local knifeName = (selectedKnife ~= "Default") and selectedKnife or nil
+            if knifeName then
+                local data = getWeaponData(knifeName)
+                if data and data.meshid then
+                    mesh.MeshId = data.meshid
+                    mesh.TextureId = data.textureid
+                    mesh.Scale = data.scale
+                end
+            end
+        end
+    end
+end)
+
+-- ============================================
+-- SELESAI
+-- ============================================
+print("✅ W424HUB loaded")
+Window:Notify({
+    Title = "Ready!",
+    Description = "All features loaded",
+    Content = "Enjoy!",
+    Color = Color3.fromRGB(0, 255, 0),
+    Delay = 3
+})
