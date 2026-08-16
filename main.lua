@@ -131,6 +131,8 @@ local sheriffAutoShoot = false
 local sheriffAutoDelay = 0.1
 local sheriffTargetPart = "HumanoidRootPart"
 local lastAutoShootTime = 0
+local lastThrowTime = 0
+local function getT() return workspace.DistributedGameTime end
 
 Window:AddToggle(TabSheriff, "Enable Aimbot", "Aim ke target", false, function(v) sheriffAimbot = v end)
 Window:AddDropdown(TabSheriff, "Trigger", "Kapan aim", {"On Shoot","Always"}, false, "On Shoot", function(v) sheriffTrigger = v end)
@@ -161,7 +163,6 @@ local murdererThrowWall = true
 local murdererAutoEquip = false
 local murdererMelee = false
 local murdererMeleeRadius = 10
-local lastThrowTime = 0
 
 Window:AddToggle(TabMurderer, "Auto Throw Knife", "Lempar pisau otomatis", false, function(v) murdererThrow = v end)
 Window:AddDropdown(TabMurderer, "Throw Target", "Target lemparan", {"All Players","Sheriff Only","Innocent Only"}, false, "All Players", function(v) murdererThrowTarget = v end)
@@ -390,36 +391,33 @@ local function getSheriffTargets()
     local myPos = myRoot.Position
 
     for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then continue end
-        local char = player.Character
-        if not char then continue end
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hum or hum.Health <= 0 then continue end
-
-        if not isSheriffTargetAllowed(player) then continue end
-
-        local part = char:FindFirstChild(sheriffTargetPart) or char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
-        if not part then continue end
-
-        local targetPos = part.Position
-        if sheriffPrediction then
-            local vel = part.Velocity or Vector3.new()
-            targetPos = targetPos + (vel * sheriffPredFactor)
+        if player ~= LocalPlayer then
+            local char = player.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 and isSheriffTargetAllowed(player) then
+                    local part = char:FindFirstChild(sheriffTargetPart) or char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
+                    if part then
+                        local targetPos = part.Position
+                        if sheriffPrediction then
+                            local vel = part.AssemblyLinearVelocity or Vector3.new()
+                            targetPos = targetPos + (vel * sheriffPredFactor)
+                        end
+                        local dist = (targetPos - myPos).Magnitude
+                        if dist <= sheriffDistance then
+                            if not sheriffWall or hasClearLOS(myPos, targetPos, myChar, char) then
+                                table.insert(targets, {
+                                    Player = player,
+                                    Part = part,
+                                    Position = targetPos,
+                                    Distance = dist
+                                })
+                            end
+                        end
+                    end
+                end
+            end
         end
-
-        local dist = (targetPos - myPos).Magnitude
-        if dist > sheriffDistance then continue end
-
-        if sheriffWall and not hasClearLOS(myPos, targetPos, myChar, char) then
-            continue
-        end
-
-        table.insert(targets, {
-            Player = player,
-            Part = part,
-            Position = targetPos,
-            Distance = dist
-        })
     end
 
     table.sort(targets, function(a, b) return a.Distance < b.Distance end)
@@ -446,31 +444,28 @@ local function getMurdererTargets()
     local myPos = myRoot.Position
 
     for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then continue end
-        local pChar = player.Character
-        if not pChar then continue end
-        local hum = pChar:FindFirstChildOfClass("Humanoid")
-        if not hum or hum.Health <= 0 then continue end
-
-        if not isMurdererTargetAllowed(player) then continue end
-
-        local part = pChar:FindFirstChild("HumanoidRootPart") or pChar:FindFirstChild("Head")
-        if not part then continue end
-
-        local targetPos = part.Position
-        if murdererThrowPred then
-            local vel = part.Velocity or Vector3.new()
-            targetPos = targetPos + (vel * murdererThrowPredFactor)
+        if player ~= LocalPlayer then
+            local pChar = player.Character
+            if pChar and isMurdererTargetAllowed(player) then
+                local hum = pChar:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    local part = pChar:FindFirstChild("HumanoidRootPart") or pChar:FindFirstChild("Head")
+                    if part then
+                        local targetPos = part.Position
+                        if murdererThrowPred then
+                            local vel = part.AssemblyLinearVelocity or Vector3.new()
+                            targetPos = targetPos + (vel * murdererThrowPredFactor)
+                        end
+                        local dist = (targetPos - myPos).Magnitude
+                        if dist <= murdererThrowDist then
+                            if not murdererThrowWall or hasClearLOS(myPos, targetPos, char, pChar) then
+                                table.insert(targets, { Character = pChar, Position = targetPos, Distance = dist })
+                            end
+                        end
+                    end
+                end
+            end
         end
-
-        local dist = (targetPos - myPos).Magnitude
-        if dist > murdererThrowDist then continue end
-
-        if murdererThrowWall and not hasClearLOS(myPos, targetPos, char, pChar) then
-            continue
-        end
-
-        table.insert(targets, { Character = pChar, Position = targetPos, Distance = dist })
     end
 
     table.sort(targets, function(a, b) return a.Distance < b.Distance end)
@@ -537,8 +532,8 @@ RunService.RenderStepped:Connect(function(dt)
         local pos, on = Camera:WorldToViewportPoint(target.Position)
         if on then
             local crosshairDist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-            if crosshairDist < 30 and (tick() - lastAutoShootTime) > sheriffAutoDelay then
-                lastAutoShootTime = tick()
+            if crosshairDist < 30 and (getT() - lastAutoShootTime) > sheriffAutoDelay then
+                lastAutoShootTime = getT()
                 pcall(function()
                     local origin = CharacterRayOrigin(myChar)
                     if origin and target.Part then
@@ -631,7 +626,7 @@ local function throwKnifeAt(targetChar, targetPos)
             if remote then remote:FireServer(nil, targetPos) end
         end
     end
-    lastThrowTime = tick()
+    lastThrowTime = getT()
 end
 
 local function doMeleeAttack()
@@ -649,60 +644,58 @@ end
 task.spawn(function()
     while true do
         local char = LocalPlayer.Character
-        if not char then task.wait(0.5) continue end
-
-        if not isMurderer(LocalPlayer) then
-            task.wait(0.5)
-            continue
-        end
-
-        if murdererAutoEquip then
-            local hasKnife = false
-            for _, tool in ipairs(char:GetChildren()) do
-                if tool:IsA("Tool") and (tool.Name:lower():find("knife") or tool.Name:lower():find("blade")) then
-                    hasKnife = true
-                    break
-                end
-            end
-            if not hasKnife then
-                equipKnife()
-                task.wait(0.2)
-            end
-        end
-
-        if murdererMelee then
-            local myRoot = char:FindFirstChild("HumanoidRootPart")
-            if myRoot then
-                local myPos = myRoot.Position
-                local closest = nil
-                local closestDist = murdererMeleeRadius
-                for _, player in ipairs(Players:GetPlayers()) do
-                    if player == LocalPlayer then continue end
-                    if not isMurdererTargetAllowed(player) then continue end
-                    local pChar = player.Character
-                    if not pChar then continue end
-                    local hum = pChar:FindFirstChildOfClass("Humanoid")
-                    if not hum or hum.Health <= 0 then continue end
-                    local targetRoot = pChar:FindFirstChild("HumanoidRootPart")
-                    if not targetRoot then continue end
-                    local dist = (targetRoot.Position - myPos).Magnitude
-                    if dist < closestDist and hasClearLOS(myPos, targetRoot.Position, char, pChar) then
-                        closestDist = dist
-                        closest = pChar
+        if char and isMurderer(LocalPlayer) then
+            if murdererAutoEquip then
+                local hasKnife = false
+                for _, tool in ipairs(char:GetChildren()) do
+                    if tool:IsA("Tool") and (tool.Name:lower():find("knife") or tool.Name:lower():find("blade")) then
+                        hasKnife = true
+                        break
                     end
                 end
-                if closest then
-                    doMeleeAttack()
-                    task.wait(0.3)
+                if not hasKnife then
+                    equipKnife()
+                    task.wait(0.2)
                 end
             end
-        end
 
-        if murdererThrow and (tick() - lastThrowTime) >= murdererThrowCD then
-            local targets = getMurdererTargets()
-            if #targets > 0 then
-                local target = targets[1]
-                throwKnifeAt(target.Character, target.Position)
+            if murdererMelee then
+                local myRoot = char:FindFirstChild("HumanoidRootPart")
+                if myRoot then
+                    local myPos = myRoot.Position
+                    local closest = nil
+                    local closestDist = murdererMeleeRadius
+                    for _, player in ipairs(Players:GetPlayers()) do
+                        if player ~= LocalPlayer and isMurdererTargetAllowed(player) then
+                            local pChar = player.Character
+                            if pChar then
+                                local hum = pChar:FindFirstChildOfClass("Humanoid")
+                                if hum and hum.Health > 0 then
+                                    local targetRoot = pChar:FindFirstChild("HumanoidRootPart")
+                                    if targetRoot then
+                                        local dist = (targetRoot.Position - myPos).Magnitude
+                                        if dist < closestDist and hasClearLOS(myPos, targetRoot.Position, char, pChar) then
+                                            closestDist = dist
+                                            closest = pChar
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    if closest then
+                        doMeleeAttack()
+                        task.wait(0.3)
+                    end
+                end
+            end
+
+            if murdererThrow and (getT() - lastThrowTime) >= murdererThrowCD then
+                local targets = getMurdererTargets()
+                if #targets > 0 then
+                    local target = targets[1]
+                    throwKnifeAt(target.Character, target.Position)
+                end
             end
         end
 
