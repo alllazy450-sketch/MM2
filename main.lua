@@ -3,47 +3,39 @@
 -- ============================================
 print("=== LOADING W424HUB ===")
 
-local Kairo = loadstring(game:HttpGet("https://raw.githubusercontent.com/Itzzavi335/Kairo-Ui-Library/refs/heads/main/source.luau"))()
-if not Kairo then
-    warn("❌ Kairo failed to load!")
-    return
-end
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-local CoreGui = game:GetService("CoreGui")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
-local VirtualInputManager = game:GetService("VirtualInputManager")
+local Players             = game:GetService("Players")
+local LocalPlayer         = Players.LocalPlayer
+local ReplicatedStorage   = game:GetService("ReplicatedStorage")
+local Workspace           = game:GetService("Workspace")
+local CoreGui             = game:GetService("CoreGui")
+local RunService          = game:GetService("RunService")
+local UserInputService    = game:GetService("UserInputService")
+local Camera              = workspace.CurrentCamera
 
 -- ============================================
--- WINDOW KAIRO
+-- LOAD ORVION UI
 -- ============================================
-local Window = Kairo:CreateWindow({
-    Title = "W424HUB",
-    Theme = "Ocean",
-    Size = UDim2.fromOffset(500, 450),
-    Center = true,
-    Draggable = true,
-    Resize = false,
-    Badges = {"v3.0 + Skins"},
-    MinimizeKey = Enum.KeyCode.RightShift,
-    MinimizeButton = true,
-    Config = { Enabled = true, Folder = "W424HUB_Config", AutoLoad = true }
+local Orvion
+local _src
+local _ok1 = pcall(function() _src = game:HttpGet("https://raw.githubusercontent.com/KnullXDgt/Orvion-UI-Library/main/source.luau") end)
+if not _ok1 or not _src or _src == "" then warn("Orvion fetch failed!") return end
+local _fn, _err = loadstring(_src)
+if not _fn then warn("Orvion loadstring failed: "..tostring(_err)) return end
+local _ok2 = pcall(function() Orvion = _fn() end)
+if not _ok2 or not Orvion then warn("Orvion init failed!") return end
+
+local Window = Orvion:CreateWindow({
+    Title          = "W424HUB",
+    Theme          = "Default",
+    Size           = UDim2.fromOffset(470, 270),
+    Center         = true,
+    Draggable      = true,
+    Badges         = {"v3.0"},
+    ToggleButton   = true,
 })
-
 if not Window then return end
 
-Window:Notify({
-    Title = "W424HUB",
-    Description = "Loaded with Skins feature!",
-    Content = "Unlock all skins & auto-apply",
-    Color = Color3.fromRGB(0, 200, 50),
-    Delay = 3
-})
+Window:Notify({Title="W424HUB", Description="Loaded!", Color=Color3.fromRGB(0,200,50), Duration=3})
 
 -- ============================================
 -- FUNGSI GET ROLE (AKURAT)
@@ -115,77 +107,80 @@ end
 -- ============================================
 -- TAB SHERIFF
 -- ============================================
-local TabSheriff = Window:CreateTab("Sheriff")
-Window:AddParagraph(TabSheriff, "Sheriff Aimbot", "Aktif jika memegang Gun")
+local TabSheriff   = Window:CreateTab("Sheriff")
+local TabMurderer  = Window:CreateTab("Murderer")
+local TabVisual    = Window:CreateTab("Visual")
+local TabInnocent  = Window:CreateTab("Innocent")
+local TabSkins     = Window:CreateTab("Skins")
 
-local sheriffAimbot = false
-local sheriffTrigger = "On Shoot"
+local secSheriff = Window:AddCollapsible(TabSheriff, "Sheriff Aimbot", true)
+
+local sheriffAimbot    = false
+local sheriffTrigger   = "On Shoot"
 local sheriffTargetMode = "Murderer Only"
-local sheriffFOV = 150
-local sheriffDistance = 300
-local sheriffSmooth = 0.5
-local sheriffWall = true
+local sheriffFOV       = 150
+local sheriffDistance  = 300
+local sheriffSmooth    = 0.5
+local sheriffWall      = true
 local sheriffPrediction = false
 local sheriffPredFactor = 0.2
 local sheriffAutoShoot = false
 local sheriffAutoDelay = 0.1
 local sheriffTargetPart = "HumanoidRootPart"
 local lastAutoShootTime = 0
-local lastThrowTime = 0
+local lastThrowTime     = 0
 local function getT() return workspace.DistributedGameTime end
 
-Window:AddToggle(TabSheriff, "Enable Aimbot", "Aim ke target", false, function(v) sheriffAimbot = v end)
-Window:AddDropdown(TabSheriff, "Trigger", "Kapan aim", {"On Shoot","Always"}, false, "On Shoot", function(v) sheriffTrigger = v end)
-Window:AddDropdown(TabSheriff, "Target", "Siapa yang di-aim", {"Murderer Only","All Players","Innocent Only"}, false, "Murderer Only", function(v) sheriffTargetMode = v end)
-Window:AddSlider(TabSheriff, "FOV Radius", "30-400", 30, 400, 150, function(v) sheriffFOV = v end)
-Window:AddSlider(TabSheriff, "Max Distance", "50-500", 50, 500, 300, function(v) sheriffDistance = v end)
-Window:AddSlider(TabSheriff, "Smoothness", "1-10", 1, 10, 5, function(v) sheriffSmooth = v / 10 end)
-Window:AddToggle(TabSheriff, "Wall Check", "Tidak menembus tembok", true, function(v) sheriffWall = v end)
-Window:AddToggle(TabSheriff, "Prediction", "Aim ke depan target", false, function(v) sheriffPrediction = v end)
-Window:AddSlider(TabSheriff, "Pred Factor", "0-100", 0, 100, 20, function(v) sheriffPredFactor = v / 100 end)
-Window:AddToggle(TabSheriff, "Auto Shoot", "Tembak otomatis", false, function(v) sheriffAutoShoot = v end)
-Window:AddSlider(TabSheriff, "Auto Shoot Delay", "0.05-0.5s", 5, 50, 10, function(v) sheriffAutoDelay = v / 100 end)
-Window:AddDropdown(TabSheriff, "Target Part", "Bagian tubuh", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) sheriffTargetPart = v end)
+Window:AddToggle(secSheriff, "Enable Aimbot", "Aim at target", false, function(v) sheriffAimbot = v end)
+Window:AddDropdown(secSheriff, "Trigger", "When to aim", {"On Shoot","Always"}, false, "On Shoot", function(v) sheriffTrigger = v end)
+Window:AddDropdown(secSheriff, "Target", "Who to aim at", {"Murderer Only","All Players","Innocent Only"}, false, "Murderer Only", function(v) sheriffTargetMode = v end)
+Window:AddSlider(secSheriff, "FOV Radius", "30-400", 30, 400, 150, function(v) sheriffFOV = v end)
+Window:AddSlider(secSheriff, "Max Distance", "50-500", 50, 500, 300, function(v) sheriffDistance = v end)
+Window:AddSlider(secSheriff, "Smoothness", "1-10", 1, 10, 5, function(v) sheriffSmooth = v / 10 end)
+Window:AddToggle(secSheriff, "Wall Check", "No wall penetration", true, function(v) sheriffWall = v end)
+Window:AddToggle(secSheriff, "Prediction", "Lead target position", false, function(v) sheriffPrediction = v end)
+Window:AddSlider(secSheriff, "Pred Factor", "0-100", 0, 100, 20, function(v) sheriffPredFactor = v / 100 end)
+Window:AddToggle(secSheriff, "Auto Shoot", "Auto fire", false, function(v) sheriffAutoShoot = v end)
+Window:AddSlider(secSheriff, "Auto Shoot Delay", "5-50ms", 5, 50, 10, function(v) sheriffAutoDelay = v / 100 end)
+Window:AddDropdown(secSheriff, "Target Part", "Body part to aim", {"Head","HumanoidRootPart","Torso"}, false, "HumanoidRootPart", function(v) sheriffTargetPart = v end)
 
 -- ============================================
 -- TAB MURDERER
 -- ============================================
-local TabMurderer = Window:CreateTab("Murderer")
-Window:AddParagraph(TabMurderer, "Murderer Tools", "Aktif jika memegang Knife")
+local secMurderer = Window:AddCollapsible(TabMurderer, "Murderer Tools", true)
 
-local murdererThrow = false
+local murdererThrow       = false
 local murdererThrowTarget = "All Players"
-local murdererThrowDist = 300
-local murdererThrowCD = 2
-local murdererThrowPred = false
+local murdererThrowDist   = 300
+local murdererThrowCD     = 2
+local murdererThrowPred   = false
 local murdererThrowPredFactor = 0.2
-local murdererThrowWall = true
-local murdererAutoEquip = false
-local murdererMelee = false
+local murdererThrowWall   = true
+local murdererAutoEquip   = false
+local murdererMelee       = false
 local murdererMeleeRadius = 10
 
-Window:AddToggle(TabMurderer, "Auto Throw Knife", "Lempar pisau otomatis", false, function(v) murdererThrow = v end)
-Window:AddDropdown(TabMurderer, "Throw Target", "Target lemparan", {"All Players","Sheriff Only","Innocent Only"}, false, "All Players", function(v) murdererThrowTarget = v end)
-Window:AddSlider(TabMurderer, "Max Throw Distance", "50-500", 50, 500, 300, function(v) murdererThrowDist = v end)
-Window:AddSlider(TabMurderer, "Throw Cooldown", "0.5-10s", 0.5, 10, 2, function(v) murdererThrowCD = v end)
-Window:AddToggle(TabMurderer, "Throw Prediction", "Lempar ke depan target", false, function(v) murdererThrowPred = v end)
-Window:AddSlider(TabMurderer, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) murdererThrowPredFactor = v / 100 end)
-Window:AddToggle(TabMurderer, "Throw Wall Check", "Tidak lempar tembus tembok", true, function(v) murdererThrowWall = v end)
-Window:AddToggle(TabMurderer, "Auto Equip Knife", "Equip pisau otomatis", false, function(v) murdererAutoEquip = v end)
-Window:AddDivider(TabMurderer, "Auto Melee Attack")
-Window:AddToggle(TabMurderer, "Auto Melee", "Serang musuh di dekat", false, function(v) murdererMelee = v end)
-Window:AddSlider(TabMurderer, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) murdererMeleeRadius = v end)
+Window:AddToggle(secMurderer, "Auto Throw Knife", "Auto throw knife", false, function(v) murdererThrow = v end)
+Window:AddDropdown(secMurderer, "Throw Target", "Throw target", {"All Players","Sheriff Only","Innocent Only"}, false, "All Players", function(v) murdererThrowTarget = v end)
+Window:AddSlider(secMurderer, "Max Throw Distance", "50-500", 50, 500, 300, function(v) murdererThrowDist = v end)
+Window:AddSlider(secMurderer, "Throw Cooldown", "0.5-10s", 1, 20, 4, function(v) murdererThrowCD = v / 2 end)
+Window:AddToggle(secMurderer, "Throw Prediction", "Lead throw position", false, function(v) murdererThrowPred = v end)
+Window:AddSlider(secMurderer, "Throw Pred Factor", "0-100", 0, 100, 20, function(v) murdererThrowPredFactor = v / 100 end)
+Window:AddToggle(secMurderer, "Throw Wall Check", "No wall throw", true, function(v) murdererThrowWall = v end)
+Window:AddToggle(secMurderer, "Auto Equip Knife", "Auto equip knife", false, function(v) murdererAutoEquip = v end)
+
+local secMelee = Window:AddCollapsible(TabMurderer, "Auto Melee", true)
+Window:AddToggle(secMelee, "Auto Melee", "Attack nearby enemies", false, function(v) murdererMelee = v end)
+Window:AddSlider(secMelee, "Melee Radius", "3-30 studs", 3, 30, 10, function(v) murdererMeleeRadius = v end)
 
 -- ============================================
--- TAB VISUAL (ESP + FOV)
+-- TAB VISUAL
 -- ============================================
-local TabVisual = Window:CreateTab("Visual")
-Window:AddParagraph(TabVisual, "ESP & FOV", "Toggle visual")
+local secESP = Window:AddCollapsible(TabVisual, "ESP", true)
 
--- ESP
 if CoreGui:FindFirstChild("ESP_Holder") then CoreGui.ESP_Holder:Destroy() end
 local espEnabled = false
-local espData = {}
+local espData    = {}
 
 local function updateESPVisual(player)
     local data = espData[player]
@@ -213,12 +208,13 @@ local function refreshESP()
     end
 end
 
-Window:AddToggle(TabVisual, "Enable ESP", "Tampilkan nama + jarak + highlight", false, function(v)
+Window:AddToggle(secESP, "Enable ESP", "Show name + distance + highlight", false, function(v)
     espEnabled = v
     refreshESP()
 end)
 
--- FOV Circle
+local secFOV = Window:AddCollapsible(TabVisual, "FOV Circle", true)
+
 local fovGui = Instance.new("ScreenGui")
 fovGui.Name = "W424_FOV"
 fovGui.Parent = CoreGui
@@ -236,14 +232,13 @@ local fovStroke = Instance.new("UIStroke", fovCircle)
 fovStroke.Color = Color3.fromRGB(255, 255, 255)
 fovStroke.Thickness = 1.5
 fovStroke.Transparency = 0.5
-local fovCorner = Instance.new("UICorner", fovCircle)
-fovCorner.CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", fovCircle).CornerRadius = UDim.new(1, 0)
 
-Window:AddToggle(TabVisual, "Show FOV Circle", "Tampilkan lingkaran FOV", false, function(v)
+Window:AddToggle(secFOV, "Show FOV Circle", "Show FOV circle", false, function(v)
     fovCircle.Visible = v
 end)
 
-Window:AddSlider(TabVisual, "FOV Radius", "30-400", 30, 400, 150, function(v)
+Window:AddSlider(secFOV, "FOV Radius", "30-400", 30, 400, 150, function(v)
     fovCircle.Size = UDim2.new(0, v * 2, 0, v * 2)
 end)
 
@@ -704,16 +699,147 @@ task.spawn(function()
 end)
 
 -- ============================================
+-- TAB INNOCENT
 -- ============================================
--- TAB SKINS (FIXED – TIDAK PAKAI AddButton & SetItems)
+local secInnocent = Window:AddCollapsible(TabInnocent, "Innocent Tools", true)
+
+-- State
+local noclipEnabled   = false
+local invisEnabled    = false
+local gunDropEnabled  = false
+local noclipConn      = nil
+local invisConn       = nil
+
+-- Noclip
+local function enableNoclip(v)
+    noclipEnabled = v
+    if noclipConn then noclipConn:Disconnect() noclipConn = nil end
+    if v then
+        noclipConn = RunService.Stepped:Connect(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end)
+    else
+        -- restore collision
+        local char = LocalPlayer.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end
+end
+
+-- Invisible (hide character locally)
+local function enableInvis(v)
+    invisEnabled = v
+    local char = LocalPlayer.Character
+    if not char then return end
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") or part:IsA("Decal") then
+            pcall(function()
+                part.LocalTransparencyModifier = v and 1 or 0
+            end)
+        end
+    end
+    -- Hook CharacterAdded untuk apply setiap respawn
+    if v and not invisConn then
+        invisConn = LocalPlayer.CharacterAdded:Connect(function(newChar)
+            task.wait(0.5)
+            if invisEnabled then
+                for _, part in ipairs(newChar:GetDescendants()) do
+                    if part:IsA("BasePart") or part:IsA("Decal") then
+                        pcall(function() part.LocalTransparencyModifier = 1 end)
+                    end
+                end
+            end
+        end)
+    elseif not v and invisConn then
+        invisConn:Disconnect(); invisConn = nil
+    end
+end
+
+local function startGunDropDetect()
+    task.spawn(function()
+        local notified = {}
+        while gunDropEnabled do
+            task.wait(0.5)
+            for _, obj in ipairs(workspace:GetChildren()) do
+                if obj:IsA("Tool") and not notified[obj] then
+                    local name = obj.Name:lower()
+                    if name:find("gun") or name:find("pistol") or name:find("revolver") or name:find("sheriff") then
+                        notified[obj] = true
+                        Window:Notify({Title="Gun Dropped!", Description=obj.Name, Color=Color3.fromRGB(255,200,0), Duration=3})
+                        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            pcall(function() obj:SetPrimaryPartCFrame(CFrame.new(hrp.Position + Vector3.new(0,2,0))) end)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+Window:AddToggle(secInnocent, "Noclip", "Walk through walls", false, function(v)
+    enableNoclip(v)
+    Window:Notify({Title="Noclip", Description=v and "ON" or "OFF", Color=v and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0), Duration=2})
+end)
+
+Window:AddToggle(secInnocent, "Invisible", "Hide character (local only)", false, function(v)
+    enableInvis(v)
+    Window:Notify({Title="Invisible", Description=v and "ON" or "OFF", Color=v and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0), Duration=2})
+end)
+
+local secGunDrop = Window:AddCollapsible(TabInnocent, "Gun Drop Detector", true)
+
+Window:AddToggle(secGunDrop, "Gun Drop Detect", "Auto detect & pickup sheriff gun", false, function(v)
+    gunDropEnabled = v
+    if v then startGunDropDetect() end
+    Window:Notify({Title="Gun Drop Detect", Description=v and "ON" or "OFF", Color=v and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0), Duration=2})
+end)
+
+Window:AddButton(secGunDrop, "Grab Nearest Gun", "Grab dropped gun near you", nil, function()
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local closest, closestDist = nil, 50
+    for _, obj in ipairs(workspace:GetChildren()) do
+        if obj:IsA("Tool") then
+            local name = obj.Name:lower()
+            if name:find("gun") or name:find("pistol") or name:find("revolver") or name:find("sheriff") then
+                local pp = obj:GetPivot().Position
+                local dist = (pp - hrp.Position).Magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closest = obj
+                end
+            end
+        end
+    end
+    if closest then
+        pcall(function() closest:SetPrimaryPartCFrame(CFrame.new(hrp.Position + Vector3.new(0,2,0))) end)
+        Window:Notify({Title="Grabbed!", Description=closest.Name, Color=Color3.fromRGB(0,200,255), Duration=2})
+    else
+        Window:Notify({Title="No gun found", Description="None within 50 studs", Color=Color3.fromRGB(255,0,0), Duration=2})
+    end
+end)
+
 -- ============================================
-local TabSkins = Window:CreateTab("Skins")
-Window:AddParagraph(TabSkins, "Unlock & Apply Skins", "MM2 only")
+-- TAB SKINS
+-- ============================================
+local secSkins = Window:AddCollapsible(TabSkins, "Unlock & Apply Skins", true)
 
 -- Variabel skin
-local SkinData = nil
+local SkinData      = nil
 local selectedKnife = "Default"
-local selectedGun = "Default"
+local selectedGun   = "Default"
 local autoApplySkin = false
 
 -- Fungsi load data
